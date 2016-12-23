@@ -56,15 +56,6 @@ void declareKeyBaseArray(py::module & mod, std::string const & suffix) {
 PYBIND11_PLUGIN(_keyBase) {
     py::module mod("_keyBase", "Python wrapper for afw _keyBase library");
 
-    /* Module level */
-
-    /* Member types and enums */
-
-    /* Constructors */
-
-    /* Operators */
-
-    /* Members */
     declareKeyBase<std::uint16_t>(mod, "U");
     declareKeyBase<std::int32_t>(mod, "I");
     declareKeyBase<std::int64_t>(mod, "L");

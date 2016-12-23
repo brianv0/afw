@@ -6,22 +6,6 @@ from . import _fieldBase as fieldBase
 from .schema import aliases
 from . import _key
 
-
-def key_eq(self, other):
-    """
-    Compare two keys. If the key types are the same they are checked for equality using the
-    C++ layer. Otherwise return NotImplemented.
-    """
-    if type(other) != type(self):
-        return NotImplemented
-    return self._eq_impl(other)
-
-def key_ne(self, other):
-    """
-    The inverse of key_eq
-    """
-    return not self == other
-
 def init_keys(Key):
     """
     lsst::afw::table.Key<T> templates are wrapped as different objects in python, for example
@@ -30,8 +14,6 @@ def init_keys(Key):
     This function sets __eq__ and __ne__ for all of the key objects.
     """
     for k in Key:
-        Key[k].__eq__ = key_eq
-        Key[k].__ne__ = key_ne
         if isinstance(k, basestring) and k.startswith('Array'):
             Key[k].subfields = property(lambda self: tuple(range(self.getSize())))
             Key[k].subkeys = property(lambda self: tuple(self[i] for i in range(self.getSize())))

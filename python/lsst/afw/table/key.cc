@@ -21,7 +21,6 @@
  */
 
 #include <pybind11/pybind11.h>
-//#include <pybind11/operators.h>
 #include <pybind11/stl.h>
 
 #include "lsst/afw/table/FieldBase.h"
@@ -33,6 +32,8 @@ namespace lsst {
 namespace afw {
 namespace table {
 
+namespace {
+
 template <typename T>
 using PyKey = py::class_<Key<T>, KeyBase<T>, FieldBase<T>>;
 
@@ -40,13 +41,22 @@ template <typename T>
 PyKey<T> declareKey(py::module & mod, std::string const & suffix) {
     PyKey<T> clsKey(mod, ("Key_" + suffix).c_str());
     clsKey.def(py::init<>());
-    clsKey.def("_eq_impl", [](const Key<T> & self, Key<T> const & other)-> bool {
-        return self == other;
-    });
+    clsKey.def(
+        "__eq__",
+        [](const Key<T> & self, Key<T> const & other)-> bool { return self == other; },
+        py::is_operator()
+    );
+    clsKey.def(
+        "__ne__",
+        [](const Key<T> & self, Key<T> const & other)-> bool { return self != other; },
+        py::is_operator()
+    );
     clsKey.def("isValid", &Key<T>::isValid);
     clsKey.def("getOffset", &Key<T>::getOffset);
     return clsKey;
 };
+
+} // anonymous
 
 PYBIND11_PLUGIN(_key) {
     py::module mod("_key", "Python wrapper for afw _key library");
@@ -63,15 +73,6 @@ PYBIND11_PLUGIN(_key) {
     declareKey<lsst::afw::table::Array<float>>(mod, "ArrayF");
     declareKey<lsst::afw::table::Array<double>>(mod, "ArrayD");
 
-    /* Module level */
-
-    /* Member types and enums */
-
-    /* Constructors */
-
-    /* Operators */
-
-    /* Members */
     auto clsKeyFlag = declareKey<Flag>(mod, "Flag");
     clsKeyFlag.def("getBit", &Key<Flag>::getBit);
 

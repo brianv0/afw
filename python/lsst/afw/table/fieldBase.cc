@@ -34,6 +34,8 @@ namespace lsst {
 namespace afw {
 namespace table {
 
+namespace {
+
 /// Declare a FieldBase<T>
 template <typename T>
 py::class_<FieldBase<T>> declareFieldBase(py::module & mod, std::string const & suffix) {
@@ -43,8 +45,6 @@ py::class_<FieldBase<T>> declareFieldBase(py::module & mod, std::string const & 
     clsFieldBase.def(py::init<int>(), "size"_a=0);
 
     clsFieldBase.def_static("getTypeString", &FieldBase<T>::getTypeString);
-
-//    clsField.def("getElementCount", &FieldBase<std::string>::getElementCount);
 
     return clsFieldBase;
 };
@@ -67,7 +67,10 @@ void declareFieldBaseString(py::module & mod) {
     clsFieldBase.def(py::init<int>(), "size"_a=-1);
 
     clsFieldBase.def("getSize", &FieldBase<std::string>::getSize);
+
 };
+
+} // anonymous
 
 PYBIND11_PLUGIN(_fieldBase) {
     py::module mod("_fieldBase", "Python wrapper for afw _fieldBase library");
@@ -84,14 +87,6 @@ PYBIND11_PLUGIN(_fieldBase) {
     declareFieldBaseArray<int>(mod, "ArrayI");
     declareFieldBaseArray<float>(mod, "ArrayF");
     declareFieldBaseArray<double>(mod, "ArrayD");
-
-    /* Member types and enums */
-
-    /* Constructors */
-
-    /* Operators */
-
-    /* Members */
     declareFieldBase<Flag>(mod, "Flag");
 
     return mod.ptr();
