@@ -34,14 +34,18 @@ namespace afw {
 namespace table {
 
 template <typename T>
-void declareKey(py::module & mod, std::string const & suffix) {
-    py::class_<Key<T>, KeyBase<T>, FieldBase<T>> clsKey(mod, ("Key_"+suffix).c_str());
+using PyKey = py::class_<Key<T>, KeyBase<T>, FieldBase<T>>;
+
+template <typename T>
+PyKey<T> declareKey(py::module & mod, std::string const & suffix) {
+    PyKey<T> clsKey(mod, ("Key_" + suffix).c_str());
     clsKey.def(py::init<>());
     clsKey.def("_eq_impl", [](const Key<T> & self, Key<T> const & other)-> bool {
         return self == other;
     });
     clsKey.def("isValid", &Key<T>::isValid);
     clsKey.def("getOffset", &Key<T>::getOffset);
+    return clsKey;
 };
 
 PYBIND11_PLUGIN(_key) {
@@ -68,6 +72,8 @@ PYBIND11_PLUGIN(_key) {
     /* Operators */
 
     /* Members */
+    auto clsKeyFlag = declareKey<Flag>(mod, "Flag");
+    clsKeyFlag.def("getBit", &Key<Flag>::getBit);
 
     return mod.ptr();
 }

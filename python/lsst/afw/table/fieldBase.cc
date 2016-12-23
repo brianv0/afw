@@ -25,6 +25,7 @@
 #include <pybind11/stl.h>
 
 #include "lsst/afw/table/FieldBase.h"
+#include "lsst/afw/table/Flag.h"
 
 namespace py = pybind11;
 using namespace pybind11::literals;
@@ -91,6 +92,7 @@ PYBIND11_PLUGIN(_fieldBase) {
     /* Operators */
 
     /* Members */
+    declareFieldBase<Flag>(mod, "Flag");
 
     return mod.ptr();
 }

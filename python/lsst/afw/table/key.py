@@ -3,12 +3,9 @@ from __future__ import absolute_import, division, print_function
 from past.builtins import basestring
 
 from . import _fieldBase as fieldBase
-from ._flag import Key_Flag
 from .schema import aliases
 from . import _key
 
-# KeyBase_Flag is defined in the flag module, but to make the code more uniform we add it to the key module
-_key.Key_Flag = Key_Flag
 
 def key_eq(self, other):
     """

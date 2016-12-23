@@ -4,7 +4,7 @@ from past.builtins import basestring
 
 import numpy as np
 
-from ._flag import Key_Flag
+from ._key import Key_Flag
 from ._baseColumnView import BaseColumnView, BitsColumn
 
 __all__ = []  # importing this module adds methods to BaseColumnView

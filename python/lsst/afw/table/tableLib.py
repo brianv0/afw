@@ -5,7 +5,6 @@ import lsst.afw.geom.ellipses
 
 from ._misc import *
 from .misc import *
-from ._flag import *
 from ._keyBase import *
 from .keyBase import *
 from ._fieldBase import *

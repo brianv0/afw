@@ -76,6 +76,7 @@ PYBIND11_PLUGIN(_keyBase) {
     declareKeyBaseArray<int>(mod, "ArrayI");
     declareKeyBaseArray<float>(mod, "ArrayF");
     declareKeyBaseArray<double>(mod, "ArrayD");
+    declareKeyBase<Flag>(mod, "Flag");
 
     return mod.ptr();
 }

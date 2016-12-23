@@ -12,7 +12,6 @@ import astropy.units
 
 from ..geom import Angle
 from . import _fieldBase
-from ._flag import FieldBase_Flag
 from . import detail
 import lsst.pex.exceptions
 

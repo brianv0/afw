@@ -1,7 +1,6 @@
 ## -*- python -*-
 from lsst.sconsUtils import scripts
 scripts.BasicSConscript.pybind11(['misc',
-                                  'flag',
                                   'keyBase',
                                   'fieldBase',
                                   'key',
