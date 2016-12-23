@@ -17,66 +17,6 @@ def addBaseRecordMethods(cls):
     """
     addRecordMethods(cls)
 
-    # The trailing underscore avoids shadowing the standard Python `set` class.
-    def set_(self, key, value):
-        """Given a string or `lsst.afw.table.Key`, set the value of the field.
-        """
-        if isinstance(key, basestring):
-            funcKey = self.getSchema().find(key).key
-        else:
-            funcKey = key
-
-        try:
-            prefix, suffix = type(funcKey).__name__.split("_")
-        except ValueError:
-            # Try using a functor
-            return key.set(self, value)
-        except Exception:
-            raise TypeError("Argument to BaseRecord.set must be a string or Key.")
-
-        if prefix != "Key":
-            raise TypeError("Argument to BaseRecord.set must be a string or Key.")
-        method = getattr(self, 'set'+suffix)
-        return method(funcKey, value)
-    cls.set = set_
-    cls.__setitem__ = set_
-
-    def get(self, key):
-        """Given a string or `lsst.afw.table.Key`, get the value of the field.
-        """
-        if isinstance(key, basestring):
-            funcKey = self.getSchema().find(key).key
-        else:
-            funcKey = key
-
-        try:
-            prefix, suffix = type(funcKey).__name__.split("_")
-        except ValueError:
-            # Try using a functor
-            return key.get(self)
-        except Exception:
-            raise TypeError("Argument to BaseRecord.get must be a string or Key.")
-
-        if prefix != "Key":
-            raise TypeError("Argument to BaseRecord.get must be a string or Key.")
-        method = getattr(self, '_get_'+suffix)
-        return method(funcKey)
-    cls.get = get
-
-    def __getitem__(self, key):
-        """Given a string or `lsst.afw.table.Key`, get the `BaseRecord` for the given key and return it.
-        """
-        if isinstance(key, basestring):
-            return self[self.getSchema().find(key).key]
-
-        # Try to get the item
-        try:
-            return self._getitem_(key)
-        except TypeError:
-            # Try to get a functor
-            return key.get(self)
-    cls.__getitem__ = __getitem__
-
     def extract(self, *patterns, **kwds):
         """Extract a dictionary of {<name>: <field-value>} in which the field names
         match the given shell-style glob pattern(s).

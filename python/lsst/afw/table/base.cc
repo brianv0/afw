@@ -65,48 +65,42 @@ using BaseCatalog = CatalogT<BaseRecord>;
 using PyBaseCatalog = py::class_<BaseCatalog, std::shared_ptr<BaseCatalog>>;
 
 template <typename T>
-void declareBaseRecordOverloads(PyBaseRecord & clsBaseRecord, std::string const & suffix) {
-    clsBaseRecord.def(("_get_"+suffix).c_str(),
-                      (typename Field<T>::Value (BaseRecord::*)(Key<T> const &) const) &BaseRecord::get);
-    clsBaseRecord.def("_getitem_", [](BaseRecord & self, Key<T> const & key)->typename Field<T>::Reference {
-        /*
-        Define the python __getitem__ method in python to return a baserecord for the requested key
-        */
-        return self[key];
-    });
-}
-
-template <typename U>
-void declareBaseRecordArrayOverloads(PyBaseRecord clsBaseRecord, std::string const & suffix) {
-    typedef lsst::afw::table::Array<U> T;
-    clsBaseRecord.def(("_get_"+suffix).c_str(),
-                      (typename Field<T>::Value (BaseRecord::*)(Key<T> const &) const) &BaseRecord::get);
-    clsBaseRecord.def("_getitem_", [](BaseRecord & self, Key<T> const & key)->ndarray::Array<U,1,1> {
-        /*
-        Define the python __getitem__ method in python to return a baserecord for the requested key
-        */
-        return self[key];
-    });
+void declareBaseRecordOverloads(PyBaseRecord & cls, std::string const & suffix) {
+    typedef typename Field<T>::Value (BaseRecord::*Getter)(Key<T> const &) const;
+    typedef void (BaseRecord::*Setter)(Key<T> const &, typename Field<T>::Value const &);
+    cls.def(("get" + suffix).c_str(), (Getter)&BaseRecord::get);
+    cls.def(("set" + suffix).c_str(), (Setter)&BaseRecord::set);
 }
 
 template <typename T>
-void declareBaseRecordOverloadsFlag(PyBaseRecord clsBaseRecord, std::string const & suffix) {
-    clsBaseRecord.def(("_get_"+suffix).c_str(),
-                      (typename Field<T>::Value (BaseRecord::*)(Key<T> const &) const) &BaseRecord::get);
+void declareBaseRecordArrayOverloads(PyBaseRecord & cls, std::string const & suffix) {
+    auto getter = [](BaseRecord & self, Key<Array<T>> const & key) -> ndarray::Array<T,1,1> {
+        return self[key];
+    };
+    auto setter = [](BaseRecord & self, Key<Array<T>> const & key, py::object const & value) {
+        if (key.getSize() == 0) {
+            // Variable-length array field: do a shallow copy, which requires a non-const
+            // contiguous array.
+            self.set(key, py::cast<ndarray::Array<T,1,1>>(value));
+        } else {
+            // Fixed-length array field: do a deep copy, which can work with a const
+            // noncontiguous array.  But we need to check the size first, since the
+            // penalty for getting that wrong is assert->abort.
+            auto v = py::cast<ndarray::Array<T const,1,0>>(value);
+            ndarray::ArrayRef<T,1,1> ref = self[key];
+            if (v.size() != ref.size()) {
+                throw LSST_EXCEPT(
+                    pex::exceptions::LengthError,
+                    (boost::format("Array sizes do not agree: %s != %s") % v.size() % ref.size()).str()
+                );
+            }
+            ref = v;
+        }
+        return;
+    };
+    cls.def(("get" + suffix).c_str(), getter);
+    cls.def(("set" + suffix).c_str(), setter);
 }
-
-template <typename T, typename U>
-void declareBaseRecordSet(PyBaseRecord clsBaseRecord, std::string const & suffix) {
-    clsBaseRecord.def(("set"+suffix).c_str(), (void (BaseRecord::*)(Key<T> const &, U const &))
-        &BaseRecord::set);
-};
-
-template <typename U>
-void declareBaseRecordSetArray(PyBaseRecord clsBaseRecord, std::string const & suffix) {
-    clsBaseRecord.def(("set"+suffix).c_str(),
-                      (void (BaseRecord::*)(Key<lsst::afw::table::Array<U>> const &,
-                                            ndarray::Array<U,1,1> const &)) &BaseRecord::set);
-};
 
 /**
 Declare member and static functions for a pybind11 wrapper of BaseRecord
@@ -120,32 +114,47 @@ void declareBaseRecord(PyBaseRecord & cls) {
     cls.def("assign", (void (BaseRecord::*)(BaseRecord const &, SchemaMapper const &)) &BaseRecord::assign);
     cls.def("getSchema", &BaseRecord::getSchema);
     cls.def("getTable", &BaseRecord::getTable);
+    cls.def_property_readonly("schema", &BaseRecord::getSchema);
+    cls.def_property_readonly("table", &BaseRecord::getTable);
 
+    declareBaseRecordOverloads<double>(cls, "D");
+    declareBaseRecordOverloads<float>(cls, "F");
+    declareBaseRecordOverloads<lsst::afw::table::Flag>(cls, "Flag");
     declareBaseRecordOverloads<std::uint16_t>(cls, "U");
     declareBaseRecordOverloads<std::int32_t>(cls, "I");
     declareBaseRecordOverloads<std::int64_t>(cls, "L");
-    declareBaseRecordOverloads<float>(cls, "F");
-    declareBaseRecordOverloads<double>(cls, "D");
     declareBaseRecordOverloads<std::string>(cls, "String");
-    declareBaseRecordOverloadsFlag<lsst::afw::table::Flag>(cls, "Flag");
     declareBaseRecordOverloads<lsst::afw::geom::Angle>(cls, "Angle");
     declareBaseRecordArrayOverloads<std::uint16_t>(cls, "ArrayU");
     declareBaseRecordArrayOverloads<int>(cls, "ArrayI");
     declareBaseRecordArrayOverloads<float>(cls, "ArrayF");
     declareBaseRecordArrayOverloads<double>(cls, "ArrayD");
 
-    declareBaseRecordSet<std::uint16_t, std::uint16_t>(cls, "U");
-    declareBaseRecordSet<std::int32_t, std::int32_t>(cls, "I");
-    declareBaseRecordSet<std::int64_t, std::int64_t>(cls, "L");
-    declareBaseRecordSet<float, float>(cls, "F");
-    declareBaseRecordSet<double, double>(cls, "D");
-    declareBaseRecordSet<std::string, std::string>(cls, "String");
-    declareBaseRecordSet<lsst::afw::table::Flag, bool>(cls, "Flag");
-    declareBaseRecordSet<lsst::afw::geom::Angle, lsst::afw::geom::Angle>(cls, "Angle");
-    declareBaseRecordSetArray<std::uint16_t>(cls, "ArrayU");
-    declareBaseRecordSetArray<int>(cls, "ArrayI");
-    declareBaseRecordSetArray<float>(cls, "ArrayF");
-    declareBaseRecordSetArray<double>(cls, "ArrayD");
+    // These are master getters and setters that can take either strings, Keys, or
+    // FunctorKeys, and dispatch to key.get.
+    auto getter = [](py::object const & self, py::object key) -> py::object {
+        py::object schema = self.attr("schema");
+        if (py::isinstance<py::str>(key) || py::isinstance<py::bytes>(key)) {
+            key = schema.attr("find")(key).attr("key");
+        }
+        return key.attr("get")(self);
+    };
+    auto setter = [](py::object const & self, py::object key, py::object const & value) -> void {
+        py::object schema = self.attr("schema");
+        if (py::isinstance<py::str>(key) || py::isinstance<py::bytes>(key)) {
+            key = schema.attr("find")(key).attr("key");
+        }
+        key.attr("set")(self, value);
+    };
+
+    // The distinction between get/set and operator[] is meaningful in C++, because "record[k] = v"
+    // operates by returning an object that can be assigned to.
+    // But there's no meaningful difference between get/set and __getitem__/__setitem__.
+    cls.def("get", getter);
+    cls.def("__getitem__", getter);
+    cls.def("set", setter);
+    cls.def("__setitem__", setter);
+
 }
 
 /**
