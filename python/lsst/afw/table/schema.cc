@@ -1,7 +1,7 @@
-/* 
+/*
  * LSST Data Management System
  * Copyright 2008-2016  AURA/LSST.
- * 
+ *
  * This product includes software developed by the
  * LSST Project (http://www.lsst.org/).
  *
@@ -9,14 +9,14 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
- * You should have received a copy of the LSST License Statement and 
- * the GNU General Public License along with this program.  If not, 
+ *
+ * You should have received a copy of the LSST License Statement and
+ * the GNU General Public License along with this program.  If not,
  * see <https://www.lsstcorp.org/LegalNotices/>.
  */
 
@@ -39,6 +39,8 @@ using namespace pybind11::literals;
 namespace lsst {
 namespace afw {
 namespace table {
+
+namespace {
 
 template <typename T>
 void declareSchemaOverloads(py::class_<Schema> & clsSchema, std::string const & suffix) {
@@ -65,6 +67,7 @@ void declareSchemaOverloads(py::class_<Schema> & clsSchema, std::string const & 
     clsSchema.def("contains", (int (Schema::*)(SchemaItem<T> const &, int) const) &Schema::contains,
                   "item"_a, "flags"_a=Schema::ComparisonFlags::EQUAL_KEYS);
 };
+
 template <>
 void declareSchemaOverloads<std::string>(py::class_<Schema> & clsSchema, std::string const & suffix) {
     clsSchema.def(("_addField_"+suffix).c_str(),
@@ -103,6 +106,8 @@ void declareSubSchemaOverloads(py::class_<SubSchema> & clsSubSchema, std::string
         return self;
     });
 };
+
+} // anonymous
 
 PYBIND11_PLUGIN(_schema) {
     py::module mod("_schema", "Python wrapper for afw _schema library");
@@ -159,9 +164,6 @@ PYBIND11_PLUGIN(_schema) {
     clsSchema.def_static("readFits",
                          (Schema (*)(fits::MemFileManager &, int)) &Schema::readFits,
                          "manager"_a, "hdu"_a=0);
-    // clsSchema.def_static("readFits",
-    //                      (Schema (*)(fits::Fits &)) &Schema::readFits,
-    //                      "fitsfile"_a);
 
     clsSchema.def("join",
                   (std::string (Schema::*)(std::string const &, std::string const &) const) &Schema::join,
@@ -195,10 +197,10 @@ PYBIND11_PLUGIN(_schema) {
     declareSchemaOverloads<lsst::afw::table::Array<int>>(clsSchema, "ArrayI");
     declareSchemaOverloads<lsst::afw::table::Array<float>>(clsSchema, "ArrayF");
     declareSchemaOverloads<lsst::afw::table::Array<double>>(clsSchema, "ArrayD");
-    
+
     clsSubSchema.def("getNames", &SubSchema::getNames, "topOnly"_a=false);
     clsSubSchema.def("getPrefix", &SubSchema::getPrefix);
-    
+
     declareSubSchemaOverloads<std::uint16_t>(clsSubSchema, "U");
     declareSubSchemaOverloads<std::int32_t>(clsSubSchema, "I");
     declareSubSchemaOverloads<std::int64_t>(clsSubSchema, "L");
