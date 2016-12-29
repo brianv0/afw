@@ -91,8 +91,27 @@ void specialize(PyKeyBase<T> &) {}
 
 template <typename T>
 void specialize(PyKeyBase<Array<T>> & cls) {
-    cls.def("__getitem__", &KeyBase<Array<T>>::operator[]);
-    cls.def("__getitem__", &KeyBase<Array<T>>::slice);
+    cls.def(
+        "__getitem__",
+        [](Key<Array<T>> const & self, py::object const & index) -> py::object {
+            if (py::isinstance<py::slice>(index)) {
+                py::slice slice(index);
+                py::size_t start=0, stop=0, step=0, length=0;
+                bool valid = slice.compute(self.getSize(), &start, &stop, &step, &length);
+                if (!valid) throw py::error_already_set();
+                if (step != 1) {
+                    throw LSST_EXCEPT(
+                        pex::exceptions::InvalidParameterError,
+                        "Step for array Key indexing must be 1."
+                    );
+                }
+                return py::cast(self.slice(start, stop));
+            } else {
+                return py::cast(self[py::cast<int>(index)]);
+            }
+        }
+    );
+    cls.def("slice", &KeyBase<Array<T>>::slice);
 }
 
 
