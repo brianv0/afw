@@ -4,7 +4,7 @@ import numpy as np
 from past.builtins import basestring
 
 import lsst.pex.exceptions
-from .schema import _suffixes
+from .schema import Key
 
 __all__ = ["addCatalogMethods", "searchTemplate"]
 
@@ -233,7 +233,7 @@ def searchTemplate(self, func, value, key):
         attr = func + suffix
         method = getattr(self, attr)
         return method(value, key)
-    for suffix in _suffixes.values():
+    for suffix in Key.keys():
         attr = func + suffix
         method = getattr(self, attr)
         try:

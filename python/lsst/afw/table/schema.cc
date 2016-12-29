@@ -20,18 +20,20 @@
  * see <https://www.lsstcorp.org/LegalNotices/>.
  */
 
+
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/functional.h>
 
+#include <sstream>
+
+#include "numpy/arrayobject.h"
+#include "ndarray/pybind11.h"
+#include "ndarray/converter.h"
+
 #include "lsst/afw/fits.h"
-#include "lsst/afw/table/misc.h"
-#include "lsst/afw/table/Key.h"
-#include "lsst/afw/table/Field.h"
-#include "lsst/afw/table/FieldBase.h"
-#include "lsst/afw/table/Flag.h"
-#include "lsst/afw/table/detail/SchemaImpl.h"
 #include "lsst/afw/table/Schema.h"
+#include "lsst/afw/table/BaseRecord.h"
 
 namespace py = pybind11;
 using namespace pybind11::literals;
@@ -42,79 +44,257 @@ namespace table {
 
 namespace {
 
-template <typename T>
-void declareSchemaOverloads(py::class_<Schema> & clsSchema, std::string const & suffix) {
-    clsSchema.def(("_addField_"+suffix).c_str(),
-                  (Key<T> (Schema::*)(Field<T> const &, bool)) &Schema::addField,
-                  "field"_a, "doReplace"_a=false);
-    clsSchema.def(("_addField_"+suffix).c_str(),
-                  (Key<T> (Schema::*)(std::string const &,
-                                    std::string const &,
-                                    std::string const &,
-                                    FieldBase<T> const &,
-                                    bool)) &Schema::addField,
-                  "name"_a, "doc"_a, "units"_a="", "base"_a=FieldBase<T>(), "doReplace"_a=false);
-    clsSchema.def(("_addField_"+suffix).c_str(),
-                  (Key<T> (Schema::*)(std::string const &,
-                                      std::string const &,
-                                      FieldBase<T> const &,
-                                      bool)) &Schema::addField,
-                  "name"_a, "doc"_a, "base"_a, "doReplace"_a=false);
-    clsSchema.def(("_find_"+suffix).c_str(),
-                  (SchemaItem<T> (Schema::*)(std::string const &) const) &Schema::find);
-    clsSchema.def(("_find_"+suffix).c_str(),
-                  (SchemaItem<T> (Schema::*)(Key<T> const &) const) &Schema::find);
-    clsSchema.def("contains", (int (Schema::*)(SchemaItem<T> const &, int) const) &Schema::contains,
-                  "item"_a, "flags"_a=Schema::ComparisonFlags::EQUAL_KEYS);
-};
+using PySchema = py::class_<Schema>;
 
-template <>
-void declareSchemaOverloads<std::string>(py::class_<Schema> & clsSchema, std::string const & suffix) {
-    clsSchema.def(("_addField_"+suffix).c_str(),
-                  (Key<std::string> (Schema::*)(Field<std::string> const &, bool)) &Schema::addField,
-                  "field"_a, "doReplace"_a=false);
-    clsSchema.def(("_addField_"+suffix).c_str(),
-                  (Key<std::string> (Schema::*)(std::string const &,
-                                    std::string const &,
-                                    std::string const &,
-                                    FieldBase<std::string> const &,
-                                    bool)) &Schema::addField,
-                  "name"_a, "doc"_a, "units"_a="", "base"_a=FieldBase<std::string>(1), "doReplace"_a=false);
-    clsSchema.def(("_addField_"+suffix).c_str(),
-                  (Key<std::string> (Schema::*)(std::string const &,
-                                      std::string const &,
-                                      FieldBase<std::string> const &,
-                                      bool)) &Schema::addField,
-                  "name"_a, "doc"_a, "base"_a, "doReplace"_a=false);
-    clsSchema.def(("_find_"+suffix).c_str(),
-                   (SchemaItem<std::string> (Schema::*)(std::string const &) const) &Schema::find);
-    clsSchema.def(("_find_"+suffix).c_str(),
-                  (SchemaItem<std::string> (Schema::*)(Key<std::string> const &) const) &Schema::find);
-    clsSchema.def("contains",
-                  (int (Schema::*)(SchemaItem<std::string> const &, int) const) &Schema::contains,
-                  "item"_a, "flags"_a=Schema::ComparisonFlags::EQUAL_KEYS);
-};
+using PySubSchema = py::class_<SubSchema>;
 
 template <typename T>
-void declareSubSchemaOverloads(py::class_<SubSchema> & clsSubSchema, std::string const & suffix) {
-    clsSubSchema.def(("_find_"+suffix).c_str(),
-                     (SchemaItem<T> (SubSchema::*)(std::string const &) const) &SubSchema::find);
-    clsSubSchema.def(("_asKey_"+suffix).c_str(), [](SubSchema & self)->Key<T> {
-        return self;
-    });
-    clsSubSchema.def(("_asField_"+suffix).c_str(), [](SubSchema & self)->Field<T> {
-        return self;
-    });
+using PyFieldBase = py::class_<FieldBase<T>>;
+
+template <typename T>
+using PyKeyBase = py::class_<KeyBase<T>>;
+
+template <typename T>
+using PyField = py::class_<Field<T>,FieldBase<T>>;
+
+template <typename T>
+using PyKey = py::class_<Key<T>, KeyBase<T>, FieldBase<T>>;
+
+template <typename T>
+using PySchemaItem = py::class_<SchemaItem<T>>;
+
+
+// Specializations for FieldBase
+
+template <typename T>
+void specialize(PyFieldBase<T> & cls) {
+    cls.def(py::init<>());
+}
+
+template <typename T>
+void specialize(PyFieldBase<Array<T>> & cls) {
+    cls.def(py::init<int>(), "size"_a=0);
+    cls.def("getSize", &FieldBase<Array<T>>::getSize);
+    cls.def("isVariableLength", &FieldBase<Array<T>>::isVariableLength);
+}
+
+void specialize(PyFieldBase<std::string> & cls) {
+    cls.def(py::init<int>(), "size"_a=-1);
+    cls.def("getSize", &FieldBase<std::string>::getSize);
+}
+
+
+// Specializations for KeyBase
+
+template <typename T>
+void specialize(PyKeyBase<T> &) {}
+
+template <typename T>
+void specialize(PyKeyBase<Array<T>> & cls) {
+    cls.def("__getitem__", &KeyBase<Array<T>>::operator[]);
+    cls.def("__getitem__", &KeyBase<Array<T>>::slice);
+}
+
+
+// Specializations for Key
+
+template <typename T>
+void addKeyAccessors(PyKey<T> & cls) {
+    cls.def("get", [](Key<T> const & self, BaseRecord & record){ return record.get(self); });
+    cls.def(
+        "set",
+        [](Key<T> const & self, BaseRecord & record, typename Key<T>::Value const & value) {
+            record.set(self, value);
+        }
+    );
+}
+
+template <typename U>
+void addKeyAccessors(PyKey<Array<U>> & cls) {
+    auto getter = [](Key<Array<U>> const & self, BaseRecord & record) -> ndarray::Array<U,1,1> {
+        return record[self];
+    };
+    auto setter = [](Key<Array<U>> const & self, BaseRecord & record, py::object const & value) {
+        if (self.getSize() == 0) {
+            // Variable-length array field: do a shallow copy, which requires a non-const
+            // contiguous array.
+            record.set(self, py::cast<ndarray::Array<U,1,1>>(value));
+        } else {
+            // Fixed-length array field: do a deep copy, which can work with a const
+            // noncontiguous array.  But we need to check the size first, since the
+            // penalty for getting that wrong is assert->abort.
+            auto v = py::cast<ndarray::Array<U const,1,0>>(value);
+            ndarray::ArrayRef<U,1,1> ref = record[self];
+            if (v.size() != ref.size()) {
+                throw LSST_EXCEPT(
+                    pex::exceptions::LengthError,
+                    (boost::format("Array sizes do not agree: %s != %s") % v.size() % ref.size()).str()
+                );
+            }
+            ref = v;
+        }
+        return;
+    };
+    cls.def("get", getter);
+    cls.def("set", setter);
+}
+
+template <typename T>
+void specialize(PyKey<T> & cls) {
+    addKeyAccessors(cls);
+}
+
+void specialize(PyKey<Flag> & cls) {
+    addKeyAccessors(cls);
+    cls.def("getBit", &Key<Flag>::getBit);
+}
+
+
+// Wrap all helper classes for a Schema field type.
+template <typename T>
+void wrapSchemaType(py::module & mod) {
+    std::string suffix = FieldBase<T>::getTypeString();
+    py::str pySuffix(suffix);
+
+    py::object astropyUnit = py::module::import("astropy.units").attr("Unit");
+
+    // FieldBase
+    PyFieldBase<T> clsFieldBase(mod, ("FieldBase" + suffix).c_str());
+    clsFieldBase.def_static("getTypeString", &FieldBase<T>::getTypeString);
+    specialize(clsFieldBase);
+
+    // KeyBase
+    PyKeyBase<T> clsKeyBase(mod, ("KeyBase" + suffix).c_str());
+    clsKeyBase.def_readonly_static("HAS_NAMED_SUBFIELDS", &KeyBase<T>::HAS_NAMED_SUBFIELDS);
+    specialize(clsKeyBase);
+
+    // Field
+    PyField<T> clsField(mod, ("Field" + suffix).c_str());
+    mod.attr("Field")[pySuffix] = clsField;
+    clsField.def(
+        "__init__",
+        [astropyUnit]( // capture by value to refcount in Python instead of dangle in C++
+            Field<T> & self,
+            std::string const & name,
+            std::string const & doc,
+            py::str const & units,
+            py::object const & size,
+            py::str const & parse_strict
+        ) {
+            astropyUnit(units, "parse_strict"_a=parse_strict);
+            std::string u = py::cast<std::string>(units);
+            if (size == py::none()) {
+                new (&self) Field<T>(name, doc, u);
+            } else {
+                int s = py::cast<int>(size);
+                new (&self) Field<T>(name, doc, u, s);
+            }
+        },
+        "name"_a, "doc"_a, "units"_a="", "size"_a=py::none(), "parse_strict"_a="raise"
+    );
+    clsField.def(
+        "_addTo",
+        [](Field<T> const & self, Schema & schema, bool doReplace) -> Key<T> {
+            return schema.addField(self, doReplace);
+        }
+    );
+    clsField.def("getName", &Field<T>::getName);
+    clsField.def("getDoc", &Field<T>::getDoc);
+    clsField.def("getUnits", &Field<T>::getUnits);
+    clsField.def("copyRenamed", &Field<T>::copyRenamed);
+    clsField.def(
+        "__repr__",
+        [](Field<T> const & self) -> std::string {
+            std::ostringstream os;
+            os << self;
+            return os.str();
+        }
+    );
+
+    // Key
+    PyKey<T> clsKey(mod, ("Key_" + suffix).c_str());
+    mod.attr("Key")[pySuffix] = clsKey;
+    clsKey.def(py::init<>());
+    clsKey.def(
+        "__eq__",
+        [](Key<T> const & self, Key<T> const & other)-> bool { return self == other; },
+        py::is_operator()
+    );
+    clsKey.def(
+        "__ne__",
+        [](Key<T> const & self, Key<T> const & other)-> bool { return self != other; },
+        py::is_operator()
+    );
+    clsKey.def("isValid", &Key<T>::isValid);
+    clsKey.def("getOffset", &Key<T>::getOffset);
+    clsKey.def(
+        "__repr__",
+        [](Key<T> const & self) -> std::string {
+            std::ostringstream os;
+            os << self;
+            return os.str();
+        }
+    );
+    clsKey.def(
+        "_findIn",
+        [](Key<T> const & self, Schema const & schema) {
+            return schema.find(self);
+        }
+    );
+    specialize(clsKey);
+
+    // SchemaItem
+    PySchemaItem<T> clsSchemaItem(mod, ("SchemaItem"+suffix).c_str());
+    mod.attr("SchemaItem")[pySuffix] = clsSchemaItem;
+    clsSchemaItem.def_readonly("key", &SchemaItem<T>::key);
+    clsSchemaItem.def_readonly("field", &SchemaItem<T>::field);
+}
+
+// Helper class for Schema::find(name, func) that converts the result to Python.
+// In C++14, this should be converted to a universal lambda.
+struct MakePythonSchemaItem {
+
+    template <typename T>
+    void operator()(SchemaItem<T> const & item) {
+        result = py::cast(item);
+    }
+
+    py::object result;
 };
+
+
+
 
 } // anonymous
 
 PYBIND11_PLUGIN(_schema) {
     py::module mod("_schema", "Python wrapper for afw _schema library");
 
+    if (_import_array() < 0) {
+            PyErr_SetString(PyExc_ImportError, "numpy.core.multiarray failed to import");
+            return nullptr;
+    };
+
     /* Module level */
-    py::class_<Schema> clsSchema(mod, "Schema");
-    py::class_<SubSchema> clsSubSchema(mod, "SubSchema");
+    py::dict fieldDict;
+    mod.attr("Field") = fieldDict;
+    mod.attr("Key") = py::dict();
+    mod.attr("SchemaItem") = py::dict();
+    PySchema clsSchema(mod, "Schema");
+    PySubSchema clsSubSchema(mod, "SubSchema");
+
+    wrapSchemaType<std::uint16_t>(mod);
+    wrapSchemaType<std::int32_t>(mod);
+    wrapSchemaType<std::int64_t>(mod);
+    wrapSchemaType<float>(mod);
+    wrapSchemaType<double>(mod);
+    wrapSchemaType<std::string>(mod);
+    wrapSchemaType<geom::Angle>(mod);
+    wrapSchemaType<Array<std::uint16_t>>(mod);
+    wrapSchemaType<Array<int>>(mod);
+    wrapSchemaType<Array<float>>(mod);
+    wrapSchemaType<Array<double>>(mod);
+    wrapSchemaType<Flag>(mod);
 
     /* Member types and enums */
     py::enum_<Schema::ComparisonFlags>(clsSchema, "ComparisonFlags")
@@ -125,16 +305,23 @@ PYBIND11_PLUGIN(_schema) {
         .value("EQUAL_FIELDS", Schema::ComparisonFlags::EQUAL_FIELDS)
         .value("EQUAL_ALIASES", Schema::ComparisonFlags::EQUAL_ALIASES)
         .value("IDENTICAL", Schema::ComparisonFlags::IDENTICAL)
-        .export_values();
+        .export_values()
+        .def("__invert__", [](Schema::ComparisonFlags a) -> std::uint8_t { return ~a; }, py::is_operator())
+        .def("__and__", [](Schema::ComparisonFlags a, std::uint8_t b) -> std::uint8_t { return a & b; },
+             py::is_operator())
+        .def("__and__",
+             [](Schema::ComparisonFlags a, Schema::ComparisonFlags b) -> std::uint8_t { return a & b; },
+             py::is_operator())
+        .def("__rand__", [](Schema::ComparisonFlags a, std::uint8_t b) -> std::uint8_t { return b & a; },
+             py::is_operator())
+        ;
 
     /* Constructors */
     clsSchema.def(py::init<>());
     clsSchema.def(py::init<Schema const &>());
 
     /* Operators */
-    clsSchema.def("__getitem__", [](Schema & self, std::string const & name) {
-        return self[name];
-    });
+    clsSchema.def("__getitem__", &Schema::operator[]);
     clsSchema.def("__eq__",
                  [](Schema const & self, Schema const & other) { return self == other; },
                  py::is_operator());
@@ -147,17 +334,86 @@ PYBIND11_PLUGIN(_schema) {
     clsSchema.def("getFieldCount", &Schema::getFieldCount);
     clsSchema.def("getFlagFieldCount", &Schema::getFlagFieldCount);
     clsSchema.def("getNonFlagFieldCount", &Schema::getNonFlagFieldCount);
+    // Instead of wrapping all the templated overrides of Schema::addField,
+    // and forcing pybind11 to do (slow) override resolution, we use the visitor
+    // pattern to invert the call: Schema calls Field._addTo (in Python, using
+    // the pybind11 C++ Python API).  We combine this with the argument parsing
+    // logic to construct a new Field if string arguments are passed instead.
+    clsSchema.def(
+        "addField",
+        [fieldDict](  // capture by value (will refcount) to avoid dangling
+            py::object const & self,
+            py::object field,
+            py::object const & type,
+            py::object const & doc,
+            py::object const & unit,
+            py::object const & size,
+            py::object const & doReplace,
+            py::object const & parse_strict
+        ) -> py::object {
+            if (py::isinstance<py::str>(field) || py::isinstance<py::bytes>(field)) {
+                field = fieldDict[type](field, doc, unit, size, parse_strict);
+            }
+            return field.attr("_addTo")(self, doReplace);
+        },
+        "field"_a, "type"_a=py::none(), "doc"_a="", "units"_a="", "size"_a=py::none(),
+        "doReplace"_a=false, "parse_strict"_a="raise",
+
+        "Add a field to the Schema.\n"
+        "\n"
+        "Parameters\n"
+        "----------\n"
+        "field : str,Field\n"
+        "    The string name of the Field, or a fully-constructed Field object.\n"
+        "    If the latter, all other arguments besides doReplace are ignored.\n"
+        "type\n : str,type\n"
+        "    The type of field to create.  Valid types are the keys of the\n"
+        "    afw.table.Field dictionary.\n"
+        "doc : str\n"
+        "    Documentation for the field.\n"
+        "unit : str\n"
+        "    Units for the field, or an empty string if unitless.\n"
+        "size : int\n"
+        "    Size of the field; valid for string and array fields only.\n"
+        "doReplace : bool\n"
+        "    If a field with this name already exists, replace it instead of\n"
+        "    raising pex.exceptions.InvalidParameterError.\n"
+        "parse_strict : str\n"
+        "    One of 'raise' (default), 'warn', or 'strict', indicating how to\n"
+        "    handle unrecognized unit strings.  See also astropy.units.Unit\n."
+    );
+    clsSchema.def(
+        "find",
+        [](py::object const & self, py::object const & key) -> py::object {
+            if (py::isinstance<py::str>(key) || py::isinstance<py::bytes>(key)) {
+                Schema const & s = py::cast<Schema const &>(self);
+                std::string name = py::cast<std::string>(key);
+                MakePythonSchemaItem func;
+                s.find(name, func);
+                return func.result;
+            }
+            return key.attr("_findIn")(self);
+        }
+    );
     clsSchema.def("getNames", &Schema::getNames, "topOnly"_a=false);
     clsSchema.def("getAliasMap", &Schema::getAliasMap);
     clsSchema.def("setAliasMap", &Schema::setAliasMap, "aliases"_a);
     clsSchema.def("disconnectAliases", &Schema::disconnectAliases);
-    clsSchema.def("_forEach", [](Schema & self, py::object & obj) {
-        self.forEach(obj);
-    });
+    clsSchema.def("forEach", [](Schema & self, py::object & obj) { self.forEach(obj); });
     clsSchema.def("compare", &Schema::compare, "other"_a, "flags"_a=Schema::ComparisonFlags::EQUAL_KEYS);
     clsSchema.def("contains", (int (Schema::*)(Schema const &, int) const) &Schema::contains,
                   "other"_a, "flags"_a=Schema::ComparisonFlags::EQUAL_KEYS);
-
+    clsSchema.def(
+        "__contains__",
+        [](py::object const & self, py::object const & key) {
+            try {
+                self.attr("find")(key);
+            } catch (py::error_already_set & err) {
+                return false;
+            }
+            return true;
+        }
+    );
     clsSchema.def_static("readFits",
                          (Schema (*)(std::string const &, int)) &Schema::readFits,
                          "filename"_a, "hdu"_a=0);
@@ -185,34 +441,33 @@ PYBIND11_PLUGIN(_schema) {
         return os.str();
     });
 
-    declareSchemaOverloads<std::uint16_t>(clsSchema, "U");
-    declareSchemaOverloads<std::int32_t>(clsSchema, "I");
-    declareSchemaOverloads<std::int64_t>(clsSchema, "L");
-    declareSchemaOverloads<float>(clsSchema, "F");
-    declareSchemaOverloads<double>(clsSchema, "D");
-    declareSchemaOverloads<std::string>(clsSchema, "String");
-    declareSchemaOverloads<lsst::afw::geom::Angle>(clsSchema, "Angle");
-    declareSchemaOverloads<lsst::afw::table::Flag>(clsSchema, "Flag");
-    declareSchemaOverloads<lsst::afw::table::Array<std::uint16_t>>(clsSchema, "ArrayU");
-    declareSchemaOverloads<lsst::afw::table::Array<int>>(clsSchema, "ArrayI");
-    declareSchemaOverloads<lsst::afw::table::Array<float>>(clsSchema, "ArrayF");
-    declareSchemaOverloads<lsst::afw::table::Array<double>>(clsSchema, "ArrayD");
-
     clsSubSchema.def("getNames", &SubSchema::getNames, "topOnly"_a=false);
     clsSubSchema.def("getPrefix", &SubSchema::getPrefix);
-
-    declareSubSchemaOverloads<std::uint16_t>(clsSubSchema, "U");
-    declareSubSchemaOverloads<std::int32_t>(clsSubSchema, "I");
-    declareSubSchemaOverloads<std::int64_t>(clsSubSchema, "L");
-    declareSubSchemaOverloads<float>(clsSubSchema, "F");
-    declareSubSchemaOverloads<double>(clsSubSchema, "D");
-    declareSubSchemaOverloads<std::string>(clsSubSchema, "String");
-    declareSubSchemaOverloads<lsst::afw::geom::Angle>(clsSubSchema, "Angle");
-    declareSubSchemaOverloads<lsst::afw::table::Flag>(clsSubSchema, "Flag");
-    declareSubSchemaOverloads<lsst::afw::table::Array<std::uint16_t>>(clsSubSchema, "ArrayU");
-    declareSubSchemaOverloads<lsst::afw::table::Array<int>>(clsSubSchema, "ArrayI");
-    declareSubSchemaOverloads<lsst::afw::table::Array<float>>(clsSubSchema, "ArrayF");
-    declareSubSchemaOverloads<lsst::afw::table::Array<double>>(clsSubSchema, "ArrayD");
+    clsSubSchema.def(
+        "asKey",
+        [](SubSchema const & self) -> py::object {
+            MakePythonSchemaItem func;
+            self.apply(func);
+            return func.result.attr("key");
+        }
+    );
+    clsSubSchema.def(
+        "asField",
+        [](SubSchema const & self) -> py::object {
+            MakePythonSchemaItem func;
+            self.apply(func);
+            return func.result.attr("field");
+        }
+    );
+    clsSubSchema.def(
+        "find",
+        [](SubSchema const & self, std::string const & name) -> py::object {
+            MakePythonSchemaItem func;
+            self.find(name, func);
+            return func.result;
+        }
+    );
+    clsSubSchema.def("__getitem__", &SubSchema::operator[]);
 
     return mod.ptr();
 }
