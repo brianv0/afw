@@ -171,7 +171,7 @@ public:
      *  @brief Add a new field to the Schema, and return the associated Key.
      *
      *  This is simply a convenience wrapper, equivalent to:
-     *  @code
+     *  @codeinspect
      *  addField(Field<T>(name, doc, base), doReplace)
      *  @endcode
      */
@@ -340,6 +340,19 @@ private:
 class SubSchema {
     typedef detail::SchemaImpl Impl;
 public:
+
+    //@{
+    /// Join strings using the field delimiter appropriate for this Schema
+    std::string join(std::string const & a, std::string const & b) const;
+    std::string join(std::string const & a, std::string const & b, std::string const & c) const {
+        return join(join(a, b), c);
+    }
+    std::string join(
+        std::string const & a, std::string const & b, std::string const & c, std::string const & d
+    ) const {
+        return join(join(a, b), join(c, d));
+    }
+    //@}
 
     /// @brief Find a nested SchemaItem by name.
     template <typename T>
