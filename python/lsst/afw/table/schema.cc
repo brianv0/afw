@@ -347,7 +347,7 @@ PYBIND11_PLUGIN(_schema) {
     clsSchema.def(py::init<Schema const &>());
 
     /* Operators */
-    clsSchema.def("__getitem__", &Schema::operator[]);
+    clsSchema.def("__getitem__", [](Schema & self, std::string const & name) { return self[name]; });
     clsSchema.def("__eq__",
                  [](Schema const & self, Schema const & other) { return self == other; },
                  py::is_operator());
@@ -493,7 +493,7 @@ PYBIND11_PLUGIN(_schema) {
             return func.result;
         }
     );
-    clsSubSchema.def("__getitem__", &SubSchema::operator[]);
+    clsSubSchema.def("__getitem__", [](SubSchema & self, std::string const & name) { return self[name]; });
 
     return mod.ptr();
 }
