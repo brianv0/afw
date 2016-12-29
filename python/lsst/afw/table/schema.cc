@@ -142,11 +142,40 @@ void addKeyAccessors(PyKey<Array<U>> & cls) {
 template <typename T>
 void specialize(PyKey<T> & cls) {
     addKeyAccessors(cls);
+    cls.def_property_readonly("subfields", [](py::object const &) { return py::none(); });
+    cls.def_property_readonly("subkeys", [](py::object const &) { return py::none(); });
 }
 
 void specialize(PyKey<Flag> & cls) {
     addKeyAccessors(cls);
+    cls.def_property_readonly("subfields", [](py::object const &) { return py::none(); });
+    cls.def_property_readonly("subkeys", [](py::object const &) { return py::none(); });
     cls.def("getBit", &Key<Flag>::getBit);
+}
+
+template <typename U>
+void specialize(PyKey<Array<U>> & cls) {
+    addKeyAccessors(cls);
+    cls.def_property_readonly(
+        "subfields",
+        [](Key<Array<U>> const & self) -> py::object {
+            py::list result;
+            for (int i = 0; i < self.getSize(); ++i) {
+                result.append(py::cast(i));
+            }
+            return py::tuple(result);
+        }
+    );
+    cls.def_property_readonly(
+        "subkeys",
+        [](Key<Array<U>> const & self) -> py::object {
+            py::list result;
+            for (int i = 0; i < self.getSize(); ++i) {
+                result.append(py::cast(self[i]));
+            }
+            return py::tuple(result);
+        }
+    );
 }
 
 
@@ -212,7 +241,7 @@ void wrapSchemaType(py::module & mod) {
     );
 
     // Key
-    PyKey<T> clsKey(mod, ("Key_" + suffix).c_str());
+    PyKey<T> clsKey(mod, ("Key" + suffix).c_str());
     mod.attr("Key")[pySuffix] = clsKey;
     clsKey.def(py::init<>());
     clsKey.def(
