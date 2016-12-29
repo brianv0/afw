@@ -248,6 +248,32 @@ void wrapSchemaType(py::module & mod) {
     mod.attr("SchemaItem")[pySuffix] = clsSchemaItem;
     clsSchemaItem.def_readonly("key", &SchemaItem<T>::key);
     clsSchemaItem.def_readonly("field", &SchemaItem<T>::field);
+    clsSchemaItem.def(
+        "__getitem__",
+        [](py::object const & self, int index) -> py::object {
+            if (index == 0) {
+                return self.attr("key");
+            } else if (index == 1) {
+                return self.attr("field");
+            }
+            throw LSST_EXCEPT(
+                pex::exceptions::LengthError,
+                "SchemaItem index must be 0 or 1."
+            );
+        }
+    );
+    clsSchemaItem.def(
+        "__len__",
+        [](py::object const & self) -> int {
+            return 2;
+        }
+    );
+    clsSchemaItem.def(
+        "__repr__",
+        [](py::object const & self) -> py::str {
+            return py::str("SchemaItem(key={0.key}, field={0.field})").format(self);
+        }
+    );
 }
 
 // Helper class for Schema::find(name, func) that converts the result to Python.
