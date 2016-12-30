@@ -14,6 +14,7 @@ from .aliasMap import *
 from ._schema import *
 from .schema import *
 from ._schemaMapper import *
+from .schemaMapper import *
 from ._baseColumnView import *
 from .baseColumnView import *
 from ._base import *
