@@ -238,7 +238,7 @@ void wrapSchemaType(py::module & mod) {
                 new (&self) Field<T>(name, doc, u, s);
             }
         },
-        "name"_a, "doc"_a, "units"_a="", "size"_a=py::none(), "parse_strict"_a="raise"
+        "name"_a, "doc"_a="", "units"_a="", "size"_a=py::none(), "parse_strict"_a="raise"
     );
     clsField.def(
         "_addTo",
@@ -408,54 +408,6 @@ PYBIND11_PLUGIN(_schema) {
     clsSchema.def("getFieldCount", &Schema::getFieldCount);
     clsSchema.def("getFlagFieldCount", &Schema::getFlagFieldCount);
     clsSchema.def("getNonFlagFieldCount", &Schema::getNonFlagFieldCount);
-    // Instead of wrapping all the templated overrides of Schema::addField,
-    // and forcing pybind11 to do (slow) override resolution, we use the visitor
-    // pattern to invert the call: Schema calls Field._addTo (in Python, using
-    // the pybind11 C++ Python API).  We combine this with the argument parsing
-    // logic to construct a new Field if string arguments are passed instead.
-    clsSchema.def(
-        "addField",
-        [fieldDict](  // capture by value (will refcount) to avoid dangling
-            py::object const & self,
-            py::object field,
-            py::object const & type,
-            py::object const & doc,
-            py::object const & unit,
-            py::object const & size,
-            py::object const & doReplace,
-            py::object const & parse_strict
-        ) -> py::object {
-            if (py::isinstance<py::str>(field) || py::isinstance<py::bytes>(field)) {
-                field = fieldDict[type](field, doc, unit, size, parse_strict);
-            }
-            return field.attr("_addTo")(self, doReplace);
-        },
-        "field"_a, "type"_a=py::none(), "doc"_a="", "units"_a="", "size"_a=py::none(),
-        "doReplace"_a=false, "parse_strict"_a="raise",
-
-        "Add a field to the Schema.\n"
-        "\n"
-        "Parameters\n"
-        "----------\n"
-        "field : str,Field\n"
-        "    The string name of the Field, or a fully-constructed Field object.\n"
-        "    If the latter, all other arguments besides doReplace are ignored.\n"
-        "type\n : str,type\n"
-        "    The type of field to create.  Valid types are the keys of the\n"
-        "    afw.table.Field dictionary.\n"
-        "doc : str\n"
-        "    Documentation for the field.\n"
-        "unit : str\n"
-        "    Units for the field, or an empty string if unitless.\n"
-        "size : int\n"
-        "    Size of the field; valid for string and array fields only.\n"
-        "doReplace : bool\n"
-        "    If a field with this name already exists, replace it instead of\n"
-        "    raising pex.exceptions.InvalidParameterError.\n"
-        "parse_strict : str\n"
-        "    One of 'raise' (default), 'warn', or 'strict', indicating how to\n"
-        "    handle unrecognized unit strings.  See also astropy.units.Unit\n."
-    );
     clsSchema.def(
         "find",
         [](py::object const & self, py::object const & key) -> py::object {

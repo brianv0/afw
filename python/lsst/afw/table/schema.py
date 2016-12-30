@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 from builtins import str as futurestr
+from past.builtins import basestring
 
 import numpy as np
 import astropy.units
@@ -57,5 +58,34 @@ class Schema:
         def func(item):
             astropy.units.Unit(item.field.getUnits(), parse_strict=parse_strict)
         self.forEach(func)
+
+    def addField(self, field, type=None, doc="", units="", size=None,
+                 doReplace=False, parse_strict="raise"):
+        """Add a field to the Schema.
+
+        Parameters
+        ----------
+        field : str,Field
+            The string name of the Field, or a fully-constructed Field object.
+            If the latter, all other arguments besides doReplace are ignored.
+        type\n : str,type
+            The type of field to create.  Valid types are the keys of the
+            afw.table.Field dictionary.
+        doc : str
+            Documentation for the field.
+        unit : str
+            Units for the field, or an empty string if unitless.
+        size : int
+            Size of the field; valid for string and array fields only.
+        doReplace : bool
+            If a field with this name already exists, replace it instead of
+            raising pex.exceptions.InvalidParameterError.
+        parse_strict : str
+            One of 'raise' (default), 'warn', or 'strict', indicating how to
+            handle unrecognized unit strings.  See also astropy.units.Unit.
+        """
+        if isinstance(field, basestring):
+            field = Field[type](field, doc=doc, units=units, size=size, parse_strict=parse_strict)
+        return field._addTo(self, doReplace)
 
     extract = Schema_extract
