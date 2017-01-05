@@ -51,7 +51,7 @@ void declareFunctions(py::module & mod, const std::string & suffix){
     py::class_<BasePolynomialFunction2<ReturnT>,
                std::shared_ptr<BasePolynomialFunction2<ReturnT>>,
                Function2<ReturnT>>
-                   clsBasePolynomialFunction2(mod, ("BasePolynomialFunction2" + suffix).c_str());
+                   clsBasePolynomialFunction2(mod, ("BasePolynomialFunction2" + suffix).c_str(), py::metaclass());
     clsBasePolynomialFunction2.def_static("nParametersFromOrder",
                                    BasePolynomialFunction2<ReturnT>::nParametersFromOrder);
     /* NullFunction1 */

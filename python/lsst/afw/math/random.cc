@@ -46,7 +46,7 @@ void declareRandomImage(py::module & mod) {
 PYBIND11_PLUGIN(_random) {
     py::module mod("_random", "Python wrapper for afw _random library");
 
-    py::class_<Random> clsRandom(mod, "Random");
+    py::class_<Random> clsRandom(mod, "Random", py::metaclass());
 
     /* Member types and enums */
     py::enum_<Random::Algorithm>(clsRandom, "Algorithm")

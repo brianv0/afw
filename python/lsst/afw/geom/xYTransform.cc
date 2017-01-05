@@ -94,7 +94,7 @@ PYBIND11_PLUGIN(_xYTransform) {
     clsAffineXYTransform.def("getForwardTransform", &AffineXYTransform::getForwardTransform);
     clsAffineXYTransform.def("getReverseTransform", &AffineXYTransform::getReverseTransform);
 
-    py::class_<RadialXYTransform, std::shared_ptr<RadialXYTransform>, XYTransform> clsRadialXYTransform(mod, "RadialXYTransform");
+    py::class_<RadialXYTransform, std::shared_ptr<RadialXYTransform>, XYTransform> clsRadialXYTransform(mod, "RadialXYTransform", py::metaclass());
 
     /* Constructors */
     clsRadialXYTransform.def(py::init<std::vector<double> const &>());

@@ -184,11 +184,11 @@ PYBIND11_PLUGIN(_exposure) {
 
     /* Module level */
     PyExposureRecord clsExposureRecord(mod, "ExposureRecord");
-    PyExposureTable clsExposureTable(mod, "ExposureTable");
+    PyExposureTable clsExposureTable(mod, "ExposureTable", py::metaclass());
     PyExposureColumnView clsExposureColumnView(mod, "ExposureColumnView");
     PyBaseExposureCatalog clsBaseExposureCatalog(mod, "_BaseExposureCatalog");
     PySortedBaseExposureCatalog clsSortedBaseExposureCatalog(mod, "_SortedBaseExposureCatalog");
-    PyExposureCatalog clsExposureCatalog(mod, "ExposureCatalog", py::dynamic_attr());
+    PyExposureCatalog clsExposureCatalog(mod, "ExposureCatalog", py::dynamic_attr(), py::metaclass());
 
     /* Members */
     declareExposureRecord(clsExposureRecord);

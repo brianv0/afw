@@ -35,7 +35,7 @@ using namespace lsst::afw::geom::ellipses;
 PYBIND11_PLUGIN(_radii) {
     py::module mod("_radii", "Python wrapper for afw _radii library");
 
-    py::class_<DeterminantRadius> clsDeterminantRadius(mod, "DeterminantRadius");
+    py::class_<DeterminantRadius> clsDeterminantRadius(mod, "DeterminantRadius", py::metaclass());
     
     clsDeterminantRadius.def(py::init<double>(), "value"_a=1.0);
     clsDeterminantRadius.def("normalize", &DeterminantRadius::normalize);

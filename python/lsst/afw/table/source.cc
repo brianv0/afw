@@ -232,7 +232,7 @@ PYBIND11_PLUGIN(_source) {
 
     /* Module level */
     PySourceRecord clsSourceRecord(mod, "SourceRecord");
-    PySourceTable clsSourceTable(mod, "SourceTable");
+    PySourceTable clsSourceTable(mod, "SourceTable", py::metaclass());
     PyBaseSourceColumnView clsBaseSourceColumnView(mod, "_BaseSourceColumnView");
     PySourceColumnView clsSourceColumnView(mod, "SourceColumnView");
     PyBaseSourceCatalog clsBaseSourceCatalog(mod, "_BaseSourceCatalog");

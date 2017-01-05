@@ -190,7 +190,7 @@ PYBIND11_PLUGIN(_base) {
     };
 
     PyBaseRecord clsBaseRecord(mod, "BaseRecord");
-    PyBaseTable clsBaseTable(mod, "BaseTable");
+    PyBaseTable clsBaseTable(mod, "BaseTable", py::metaclass());
     PyBaseColumnView clsBaseColumnView(mod, "BaseColumnView");
     PyBaseCatalog clsBaseCatalog(mod, "BaseCatalog", py::dynamic_attr());
 

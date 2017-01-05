@@ -52,7 +52,7 @@ PYBIND11_PLUGIN(_tanWcs) {
 
     lsst::afw::table::io::declarePersistableFacade<TanWcs>(mod, "TanWcs");
 
-    py::class_<TanWcs, std::shared_ptr<TanWcs>, PersistableFacade<TanWcs>, lsst::afw::image::Wcs> clsTanWcs(mod, "TanWcs");
+    py::class_<TanWcs, std::shared_ptr<TanWcs>, PersistableFacade<TanWcs>, lsst::afw::image::Wcs> clsTanWcs(mod, "TanWcs", py::metaclass());
 
     clsTanWcs.def(py::init<geom::Point2D const &,
                            geom::Point2D const &,

@@ -124,7 +124,7 @@ namespace {
     // Wrap class SpatialCellImageCandidate (an abstract class, so no constructor is wrapped)
     void wrapSpatialCellImageCandidate(py::module & mod) {
         py::class_<SpatialCellImageCandidate, std::shared_ptr<SpatialCellImageCandidate>,
-                   SpatialCellCandidate> cls(mod, "SpatialCellImageCandidate");   
+                   SpatialCellCandidate> cls(mod, "SpatialCellImageCandidate", py::metaclass());
 
         cls.def_static("setWidth", &SpatialCellImageCandidate::setWidth, "width"_a);
         cls.def_static("getWidth", &SpatialCellImageCandidate::getWidth);

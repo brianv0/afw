@@ -95,7 +95,7 @@ PYBIND11_PLUGIN(_simple) {
     py::module mod("_simple", "Python wrapper for afw _simple library");
 
     /* Module level */
-    PySimpleTable clsSimpleTable(mod, "SimpleTable");
+    PySimpleTable clsSimpleTable(mod, "SimpleTable", py::metaclass());
     PySimpleRecord clsSimpleRecord(mod, "SimpleRecord");
     PySimpleColumnView clsSimpleColumnView(mod, "SimpleColumnView");
     PyBaseSimpleCatalog clsBaseSimpleCatalog(mod, "_BaseSimpleCatalog");

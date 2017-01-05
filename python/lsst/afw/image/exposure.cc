@@ -61,7 +61,7 @@ py::class_<Exposure<PixelT, MaskPixel, VariancePixel>,
     using ExposureT = Exposure<PixelT, MaskPixel, VariancePixel>;
     using MaskedImageT = typename ExposureT::MaskedImageT;
 
-    py::class_<ExposureT, std::shared_ptr<ExposureT>> cls(mod, ("Exposure" + suffix).c_str());
+    py::class_<ExposureT, std::shared_ptr<ExposureT>> cls(mod, ("Exposure" + suffix).c_str(), py::metaclass());
 
     mod.def("makeExposure", &makeExposure<PixelT, MaskPixel, VariancePixel>,
             "maskedImage"_a, "wcs"_a=std::shared_ptr<Wcs const>());

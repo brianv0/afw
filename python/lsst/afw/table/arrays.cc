@@ -43,7 +43,7 @@ template <typename T>
 void declareArrayKey(py::module & mod, std::string const & suffix) {
     py::class_<ArrayKey<T>,
                std::shared_ptr<ArrayKey<T>>,
-               FunctorKey<ndarray::Array<T const, 1, 1>>> clsArrayKey(mod, ("Array"+suffix+"Key").c_str());
+               FunctorKey<ndarray::Array<T const, 1, 1>>> clsArrayKey(mod, ("Array"+suffix+"Key").c_str(), py::metaclass());
     
     clsArrayKey.def(py::init<>());
     clsArrayKey.def(py::init<Key<Array<T>> const &>());

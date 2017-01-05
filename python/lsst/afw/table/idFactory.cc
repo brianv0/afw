@@ -35,7 +35,7 @@ namespace table {
 PYBIND11_PLUGIN(_idFactory) {
     py::module mod("_idFactory", "Python wrapper for afw _idFactory library");
 
-    py::class_<IdFactory, std::shared_ptr<IdFactory>> clsIdFactory(mod, "IdFactory");
+    py::class_<IdFactory, std::shared_ptr<IdFactory>> clsIdFactory(mod, "IdFactory", py::metaclass());
 
     /* Operators */
     clsIdFactory.def("__call__", &IdFactory::operator());

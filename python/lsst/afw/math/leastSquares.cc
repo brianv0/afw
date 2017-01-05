@@ -38,7 +38,7 @@ using namespace lsst::afw::math;
 
 template <typename T1, typename T2, int C1, int C2>
 void declareLeastSquares(py::module &mod){
-    py::class_<LeastSquares> cls(mod, "LeastSquares");
+    py::class_<LeastSquares> cls(mod, "LeastSquares", py::metaclass());
     py::enum_<LeastSquares::Factorization>(cls, "Factorization")
         .value("NORMAL_EIGENSYSTEM", LeastSquares::Factorization::NORMAL_EIGENSYSTEM)
         .value("NORMAL_CHOLESKY", LeastSquares::Factorization::NORMAL_CHOLESKY)

@@ -38,7 +38,7 @@ using namespace pybind11::literals;
 
 template <typename MaskPixelT>
 void declareMask(py::module & mod, std::string const & suffix) {
-    py::class_<Mask<MaskPixelT>, std::shared_ptr<Mask<MaskPixelT>>, ImageBase<MaskPixelT>> cls(mod, ("Mask" + suffix).c_str());
+    py::class_<Mask<MaskPixelT>, std::shared_ptr<Mask<MaskPixelT>>, ImageBase<MaskPixelT>> cls(mod, ("Mask" + suffix).c_str(), py::metaclass());
 
     /* Constructors */
     cls.def(py::init<unsigned int, unsigned int, typename Mask<MaskPixelT>::MaskPlaneDict const &>(),

@@ -37,7 +37,7 @@ PYBIND11_PLUGIN(_flag) {
     py::module mod("_flag", "Python wrapper for afw _flag library");
 
     /* Module level */
-    py::class_<FieldBase<Flag>> clsFieldBase(mod, "FieldBase_Flag");
+    py::class_<FieldBase<Flag>> clsFieldBase(mod, "FieldBase_Flag", py::metaclass());
     py::class_<KeyBase<Flag>> clsKeyBase(mod, "KeyBase_Flag");
     py::class_<Key<Flag>, KeyBase<Flag>, FieldBase<Flag>> clsKey(mod, "Key_Flag");
     clsKey.def("_eq_impl", [](const Key<Flag> & self, Key<Flag> const & other)-> bool {

@@ -100,7 +100,7 @@ PYBIND11_PLUGIN(_peak) {
 
     /* Module level */
     PyPeakRecord clsPeakRecord(mod, "PeakRecord");
-    PyPeakTable clsPeakTable(mod, "PeakTable");
+    PyPeakTable clsPeakTable(mod, "PeakTable", py::metaclass());
     PyPeakColumnView clsPeakColumnView(mod, "PeakColumnView");
     PyPeakCatalog clsPeakCatalog(mod, "PeakCatalog", py::dynamic_attr());
 

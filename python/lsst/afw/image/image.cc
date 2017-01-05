@@ -102,7 +102,7 @@ py::class_<Image<PixelT>,
 
     py::class_<Image<PixelT>,
                std::shared_ptr<Image<PixelT>>,
-               ImageBase<PixelT>> cls(mod, ("Image" + suffix).c_str());
+               ImageBase<PixelT>> cls(mod, ("Image" + suffix).c_str(), py::metaclass());
 
     /* Constructors */
     cls.def(py::init<unsigned int, unsigned int, PixelT>(),

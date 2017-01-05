@@ -42,7 +42,7 @@ PYBIND11_PLUGIN(_linearTransform) {
             return nullptr;
         }
 
-    py::class_<LinearTransform> clsLinearTransform(mod, "LinearTransform");
+    py::class_<LinearTransform> clsLinearTransform(mod, "LinearTransform", py::metaclass());
 
     /* Member types and enums */
     py::enum_<LinearTransform::Parameters>(clsLinearTransform, "Parameters")

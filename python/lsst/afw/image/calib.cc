@@ -64,7 +64,7 @@ PYBIND11_PLUGIN(_calib) {
 
     py::class_<Calib, std::shared_ptr<Calib>,
                table::io::PersistableFacade<Calib>,
-               table::io::Persistable> cls(mod, "Calib");
+               table::io::Persistable> cls(mod, "Calib", py::metaclass());
 
     /* Constructors */
     cls.def(py::init<>());

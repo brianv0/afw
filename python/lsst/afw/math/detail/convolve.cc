@@ -67,7 +67,7 @@ PYBIND11_PLUGIN(_convolve) {
     declareAll<int, int>(mod);
     declareAll<std::uint16_t, std::uint16_t>(mod);
 
-    py::class_<KernelImagesForRegion, std::shared_ptr<KernelImagesForRegion>> clsKernelImagesForRegion(mod, "KernelImagesForRegion");
+    py::class_<KernelImagesForRegion, std::shared_ptr<KernelImagesForRegion>> clsKernelImagesForRegion(mod, "KernelImagesForRegion", py::metaclass());
 
     py::enum_<KernelImagesForRegion::Location>(clsKernelImagesForRegion, "Location")
         .value("BOTTOM_LEFT", KernelImagesForRegion::Location::BOTTOM_LEFT)

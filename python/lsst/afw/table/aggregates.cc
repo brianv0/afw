@@ -48,7 +48,7 @@ namespace {
 
 template <typename T>
 void declarePointKey(py::module &mod, std::string const & suffix) {
-    py::class_<PointKey<T>> cls(mod, ("Point"+suffix+"Key").c_str());
+    py::class_<PointKey<T>> cls(mod, ("Point"+suffix+"Key").c_str(), py::metaclass());
 
     /* Constructors */
     cls.def(py::init<>());
@@ -77,7 +77,7 @@ void declareCovarianceMatrixKey(py::module &mod, const::std::string & suffix) {
     typedef std::vector< Key<T> > CovarianceKeyArray;
     typedef std::vector<std::string> NameArray;
     
-    py::class_<CovarianceMatrixKey<T,N>> cls(mod, ("CovarianceMatrix"+suffix+"Key").c_str());
+    py::class_<CovarianceMatrixKey<T,N>> cls(mod, ("CovarianceMatrix"+suffix+"Key").c_str(), py::metaclass());
     
     cls.def(py::init<>());
     cls.def(py::init<SigmaKeyArray const &, CovarianceKeyArray const &>(),
@@ -138,11 +138,11 @@ PYBIND11_PLUGIN(_aggregates) {
     declareCovarianceMatrixKey<double,4>(mod, "4d");
     declareCovarianceMatrixKey<double,Eigen::Dynamic>(mod, "Xd");
 
-    py::class_<CoordKey, FunctorKey<lsst::afw::coord::IcrsCoord>> clsCoordKey(mod, "CoordKey");
+    py::class_<CoordKey, FunctorKey<lsst::afw::coord::IcrsCoord>> clsCoordKey(mod, "CoordKey", py::metaclass());
     
-    py::class_<QuadrupoleKey> clsQuadrupoleKey(mod, "QuadrupoleKey");
+    py::class_<QuadrupoleKey> clsQuadrupoleKey(mod, "QuadrupoleKey", py::metaclass());
     
-    py::class_<EllipseKey, std::shared_ptr<EllipseKey>> clsEllipseKey(mod, "EllipseKey");
+    py::class_<EllipseKey, std::shared_ptr<EllipseKey>> clsEllipseKey(mod, "EllipseKey", py::metaclass());
 
     /* Member types and enums */
 

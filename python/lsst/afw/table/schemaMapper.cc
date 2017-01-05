@@ -60,7 +60,7 @@ PYBIND11_PLUGIN(_schemaMapper) {
     py::module mod("_schemaMapper", "Python wrapper for afw _schemaMapper library");
 
     /* Module level */
-    py::class_<SchemaMapper> clsSchemaMapper(mod, "SchemaMapper");
+    py::class_<SchemaMapper> clsSchemaMapper(mod, "SchemaMapper", py::metaclass());
 
     /* Member types and enums */
 

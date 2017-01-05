@@ -54,7 +54,7 @@ PYBIND11_PLUGIN(_psf) {
                daf::base::Persistable,
                afw::table::io::Persistable,
                table::io::PersistableFacade<Psf>,
-               daf::base::Citizen> cls(mod, "Psf");
+               daf::base::Citizen> cls(mod, "Psf", py::metaclass());
 
     /* Member types and enums */
     py::enum_<Psf::ImageOwnerEnum>(cls, "ImageOwnerEnum")

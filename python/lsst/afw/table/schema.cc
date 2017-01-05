@@ -108,7 +108,7 @@ PYBIND11_PLUGIN(_schema) {
     py::module mod("_schema", "Python wrapper for afw _schema library");
 
     /* Module level */
-    py::class_<Schema> clsSchema(mod, "Schema");
+    py::class_<Schema> clsSchema(mod, "Schema", py::metaclass());
     py::class_<SubSchema> clsSubSchema(mod, "SubSchema");
 
     /* Member types and enums */

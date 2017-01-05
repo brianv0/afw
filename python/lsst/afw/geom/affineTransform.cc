@@ -43,7 +43,7 @@ PYBIND11_PLUGIN(_affineTransform) {
         return nullptr;
     }
 
-    py::class_<AffineTransform> clsAffineTransform(mod, "AffineTransform");
+    py::class_<AffineTransform> clsAffineTransform(mod, "AffineTransform", py::metaclass());
 
     py::enum_<AffineTransform::Parameters>(clsAffineTransform, "Parameters", py::arithmetic())
         .value("XX", AffineTransform::Parameters::XX)

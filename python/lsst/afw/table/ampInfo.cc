@@ -144,7 +144,7 @@ PYBIND11_PLUGIN(_ampInfo) {
 
     /* Module level */
     PyAmpInfoRecord clsAmpInfoRecord(mod, "AmpInfoRecord");
-    PyAmpInfoTable clsAmpInfoTable(mod, "AmpInfoTable");
+    PyAmpInfoTable clsAmpInfoTable(mod, "AmpInfoTable", py::metaclass());
     PyAmpInfoColumnView clsAmpInfoColumnView(mod, "AmpInfoColumnView");
     PyAmpInfoCatalog clsAmpInfoCatalog(mod, "AmpInfoCatalog", py::dynamic_attr());
 

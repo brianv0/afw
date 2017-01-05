@@ -58,7 +58,7 @@ py::class_<MaskedImage<ImagePixelT, MaskPixel, VariancePixel>,
     using MI = MaskedImage<ImagePixelT, MaskPixel, VariancePixel>;
 
     py::class_<MI, std::shared_ptr<MI>, lsst::daf::base::Persistable, lsst::daf::base::Citizen>
-        cls(mod, ("MaskedImage" + suffix).c_str());
+        cls(mod, ("MaskedImage" + suffix).c_str(), py::metaclass());
 
     mod.def("makeMaskedImage", &makeMaskedImage<ImagePixelT, MaskPixel, VariancePixel>,
             "image"_a, "mask"_a=std::shared_ptr<Mask<MaskPixel>>(),

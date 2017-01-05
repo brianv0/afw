@@ -65,7 +65,7 @@ PYBIND11_PLUGIN(_chebyshevBoundedField) {
     lsst::afw::table::io::declarePersistableFacade<ChebyshevBoundedField>(mod, "ChebyshevBoundedField");
     py::class_<ChebyshevBoundedFieldControl>
         clsChebyshevBoundedFieldControl(mod, "ChebyshevBoundedFieldControl");
-    ClsField clsChebyshevBoundedField(mod, "ChebyshevBoundedField");
+    ClsField clsChebyshevBoundedField(mod, "ChebyshevBoundedField", py::metaclass());
 
     /* Member types and enums */
     using Control = ChebyshevBoundedFieldControl;

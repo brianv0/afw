@@ -40,8 +40,8 @@ PYBIND11_PLUGIN(_filter) {
     py::module mod("_filter", "Python wrapper for afw _filter library");
 
     /* Module level */
-    py::class_<FilterProperty, std::shared_ptr<FilterProperty>> clsFilterProperty(mod, "FilterProperty");
-    py::class_<Filter> clsFilter(mod, "Filter");
+    py::class_<FilterProperty, std::shared_ptr<FilterProperty>> clsFilterProperty(mod, "FilterProperty", py::metaclass());
+    py::class_<Filter> clsFilter(mod, "Filter", py::metaclass());
 
     mod.def("stripFilterKeywords", &detail::stripFilterKeywords, "metadata"_a);
 
