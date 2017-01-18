@@ -39,17 +39,6 @@ namespace table {
 
 template <typename T>
 void declareSchemaMapperOverloads(py::class_<SchemaMapper> & clsSchemaMapper, std::string const & suffix) {
-    clsSchemaMapper.def("addMapping",
-        (Key<T> (SchemaMapper::*)(Key<T> const &, bool)) &SchemaMapper::addMapping,
-        "inputKey"_a, "doReplace"_a=false);
-    clsSchemaMapper.def("addMapping",
-                        (Key<T> (SchemaMapper::*)(Key<T> const &, Field<T> const &, bool))
-                            &SchemaMapper::addMapping,
-                        "inputKey"_a, "outputField"_a, "doReplace"_a=false);
-    clsSchemaMapper.def("addMapping", 
-                        (Key<T> (SchemaMapper::*)(Key<T> const &, std::string const &, bool))
-                            &SchemaMapper::addMapping,
-                        "inputKey"_a, "outputName"_a, "doReplace"_a=true);
     clsSchemaMapper.def("getMapping", (Key<T> (SchemaMapper::*)(Key<T> const &) const)
         &SchemaMapper::getMapping);
 };

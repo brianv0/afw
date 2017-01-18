@@ -42,4 +42,28 @@ class SchemaMapper:
             field = Field[type](field, doc=doc, units=units, size=size, parse_strict=parse_strict)
         return field._addTo(self.editOutputSchema(), doReplace)
 
+    def addMapping(self, input, output=None, doReplace=True):
+        """Add a mapped field to the output schema.
+
+        Parameters
+        ----------
+        input : Key
+            A Key from the input schema whose values will be mapped to the new
+            field.
+        output : str,Field
+            A Field object that describes the new field to be added to the
+            output schema, or the name of the field (with documentation and
+            units copied from the input schema).  May be None to copy everything
+            from the input schema.
+        doReplace : bool
+            If a field with this name already exists in the output schema,
+            replace it instead of raising pex.exceptions.InvalidParameterError.
+        """
+        # Workaround for calling positional arguments; avoids an API change during pybind11 conversion,
+        # but we should just make that change and encourage using kwargs in the future.
+        if output is True or output is False:
+            doReplace = output
+            output = None
+        input._addMappingTo(self, output, doReplace)
+
     extract = Schema_extract

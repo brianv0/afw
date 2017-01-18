@@ -34,6 +34,7 @@
 #include "lsst/afw/fits.h"
 #include "lsst/afw/table/Schema.h"
 #include "lsst/afw/table/BaseRecord.h"
+#include "lsst/afw/table/SchemaMapper.h"
 
 namespace py = pybind11;
 using namespace pybind11::literals;
@@ -287,6 +288,24 @@ void wrapSchemaType(py::module & mod) {
         "_findIn",
         [](Key<T> const & self, Schema const & schema) {
             return schema.find(self);
+        }
+    );
+    clsKey.def(
+        "_addMappingTo",
+        [](Key<T> const & self, SchemaMapper & mapper, Field<T> const & field, bool doReplace) {
+            return mapper.addMapping(self, field, doReplace);
+        }
+    );
+    clsKey.def(
+        "_addMappingTo",
+        [](Key<T> const & self, SchemaMapper & mapper, std::string const & name, bool doReplace) {
+            return mapper.addMapping(self, name, doReplace);
+        }
+    );
+    clsKey.def(
+        "_addMappingTo",
+        [](Key<T> const & self, SchemaMapper & mapper, py::object const &, bool doReplace) {
+            return mapper.addMapping(self, doReplace);
         }
     );
     specialize(clsKey);
