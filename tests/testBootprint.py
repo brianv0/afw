@@ -126,10 +126,6 @@ class BootprintTestCase(unittest.TestCase):
                                shape, places)
         self.assertEqual(self.footprint.getShape().getIxy(), covShape)
 
-        # Check if the properties are the same as what they refer to
-        self.assertEqual(self.footprint.center, self.footprint.getCentroid())
-        self.assertEqual(self.footprint.shape, self.footprint.getShape())
-
         # Shift the footprint back
         self.footprint.shift(afwGeom.ExtentI(-offsetX, -offsetY))
 
@@ -162,7 +158,7 @@ class BootprintTestCase(unittest.TestCase):
                                 afwGeom.Point2I(clipRad, clipRad))
         self.footprint.clipTo(clipBox)
         # Fetch the bounding box using the property notation
-        bBox = self.footprint.bbox
+        bBox = self.footprint.getBBox()
         # Check the bounding box is now at the bounds which were clipped to
         self.assertEqual(bBox.getMinX(), -clipRad)
         self.assertEqual(bBox.getMinY(), -clipRad)
@@ -179,7 +175,7 @@ class BootprintTestCase(unittest.TestCase):
         self.footprint.erode(kernel)
 
         # Verify the eroded dimensions
-        bBox = self.footprint.bbox
+        bBox = self.footprint.getBBox()
         self.assertEqual(bBox.getMinX(), -3)
         self.assertEqual(bBox.getMinY(), -3)
         self.assertEqual(bBox.getMaxX(), 3)
@@ -193,7 +189,7 @@ class BootprintTestCase(unittest.TestCase):
         self.footprint.erode(1, afwGeom.Stencil.BOX)
 
         # verify the eroded dimensions
-        bBox = self.footprint.bbox
+        bBox = self.footprint.getBBox()
         self.assertEqual(bBox.getMinX(), -3)
         self.assertEqual(bBox.getMinY(), -3)
         self.assertEqual(bBox.getMaxX(), 3)
@@ -202,6 +198,36 @@ class BootprintTestCase(unittest.TestCase):
         # Dilate the footprint back to the origional using alternate signature
         self.footprint.dilate(1, afwGeom.Stencil.BOX)
         self.assertEqual(self.footprint.spans, self.spans)
+
+    def testSplit(self):
+        spanList = [afwGeom.Span(0, 2, 4),
+                    afwGeom.Span(1, 2, 4),
+                    afwGeom.Span(2, 2, 4),
+                    afwGeom.Span(10, 4, 7),
+                    afwGeom.Span(11, 4, 7),
+                    afwGeom.Span(12, 4, 7)]
+
+        spans = afwGeom.SpanSet(spanList)
+        region = afwGeom.Box2I(afwGeom.PointI(-6, -6), afwGeom.PointI(20, 20))
+        multiFoot = afwDet.Bootprint(spans, region)
+
+        records = [multiFoot.addPeak(3, 1, 100),
+                   multiFoot.addPeak(5, 11, 100)]
+
+        # Verify that the footprint is multi-component
+        self.assertFalse(multiFoot.isContiguous())
+
+        footprintList = multiFoot.split()
+
+        self.assertEqual(len(footprintList), 2)
+        for i, fp in enumerate(footprintList):
+            # check that the correct Spans are populated for each
+            tempSpan = afwGeom.SpanSet(spanList[i*3:i*3+3])
+            self.assertEqual(fp.spans, tempSpan)
+
+            # check that the peaks are split properly
+            self.assertEqual(len(fp.peaks), 1)
+            self.assertEqual(fp.peaks[0], records[i])
 
     def testPersistence(self):
         # populate the peaks for the peak tests

@@ -89,27 +89,26 @@ PYBIND11_PLUGIN(_bootprint) {
                      "r"_a, "stencil"_a = geom::Stencil::CIRCLE);
     clsBootprint.def("erode", (void (Bootprint::*)(geom::SpanSet const &)) &Bootprint::erode);
     clsBootprint.def("removeOrphanPeaks", &Bootprint::removeOrphanPeaks);
+    clsBootprint.def("isContiguous", &Bootprint::isContiguous);
+    clsBootprint.def("split", []
+                              (Bootprint const & self) -> py::list
+                              {
+                                  // This is a work around for pybind not properly
+                                  // handling converting a vector of unique pointers
+                                  // to python lists of shared pointers
+                                  py::list l;
+                                  for (auto & ptr: self.split()) {
+                                      l.append(py::cast(std::shared_ptr<Bootprint>(std::move(ptr))));
+                                  }
+                                  return l;
+                              });
 
     /* Define python level properties */
     clsBootprint.def_property("spans", &Bootprint::getSpans, &Bootprint::setSpans);
     clsBootprint.def_property_readonly("peaks", (PeakCatalog & (Bootprint::*)()) &Bootprint::getPeaks,
                                        py::return_value_policy::reference);
     clsBootprint.def_property_readonly("isHeavy", &Bootprint::isHeavy);
-    clsBootprint.def_property_readonly("center",
-                                       []
-                                       (Bootprint const & self)->geom::Point2D {
-                                           return self.getCentroid();
-                                       });
-    clsBootprint.def_property_readonly("shape",
-                                       []
-                                       (Bootprint const & self)->geom::ellipses::Quadrupole {
-                                           return self.getShape();
-                                       });
-    clsBootprint.def_property_readonly("bbox",
-                                       []
-                                       (Bootprint const & self)->geom::Box2I {
-                                           return self.getBBox();
-                                       });
+
 
     /* Python Operators functions */
     clsBootprint.def("__contains__", []
