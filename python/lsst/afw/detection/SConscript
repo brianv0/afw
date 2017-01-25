@@ -9,5 +9,4 @@ scripts.BasicSConscript.pybind11(['psf',
                                   'footprintCtrl',
                                   'gaussianPsf',
                                   'footprintMerge',
-                                  'heavyFootprint',
-                                  'footprint'])
+                                  'heavyFootprint'])
