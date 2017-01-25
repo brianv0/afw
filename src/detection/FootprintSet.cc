@@ -807,7 +807,7 @@ detection::FootprintSet::FootprintSet(
  *
  * Go through an image, finding sets of connected pixels above threshold
  * and assembling them into Footprint%s;  the resulting set of objects
- * is returned as an \c array<Footprint::Ptr>
+ * is returned as an \c array<std::shared_ptr<Footprint>>
  *
  * If threshold.getPolarity() is true, pixels above the Threshold are
  * assembled into Footprints; if it's false, then pixels \e below Threshold
@@ -890,7 +890,7 @@ detection::FootprintSet::FootprintSet(
     for (FootprintList::const_iterator fiter = _footprints->begin();
          fiter != _footprints->end(); ++fiter
     ) {
-        Footprint::Ptr const foot = *fiter;
+        std::shared_ptr<Footprint> const foot = *fiter;
 
         maskit.apply(*foot);
     }
@@ -1447,7 +1447,7 @@ detection::FootprintSet::insertIntoImage(
     for (FootprintList::const_iterator fiter = _footprints->begin();
          fiter != _footprints->end(); fiter++
     ) {
-        Footprint::Ptr const foot = *fiter;
+        std::shared_ptr<Footprint> const foot = *fiter;
 
         if (relativeIDs) {
             id++;

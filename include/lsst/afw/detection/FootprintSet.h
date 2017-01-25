@@ -56,7 +56,7 @@ class FootprintSet : public lsst::daf::base::Citizen {
 public:
 
     /// The FootprintSet's set of Footprint%s
-    typedef std::vector<Footprint::Ptr> FootprintList;
+    typedef std::vector<std::shared_ptr<Footprint>> FootprintList;
 
 #ifndef SWIG
     template <typename ImagePixelT>
