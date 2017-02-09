@@ -30,8 +30,8 @@ namespace lsst { namespace afw { namespace detection {
 Footprint::Footprint(std::shared_ptr<geom::SpanSet> inputSpans,
           geom::Box2I const & region): lsst::daf::base::Citizen(typeid(this)),
                                        _spans(inputSpans),
-                                       _region(region),
-                                       _peaks(PeakTable::makeMinimalSchema()) {}
+                                       _peaks(PeakTable::makeMinimalSchema()),
+                                       _region(region) {}
 
 Footprint::Footprint(std::shared_ptr<geom::SpanSet> inputSpans,
           afw::table::Schema const & peakSchema,
@@ -315,6 +315,32 @@ void Footprint::readPeaks(afw::table::BaseCatalog const & peakCat, Footprint & l
     for (auto const & peak : peakCat) {
         peaks.addNew()->assign(peak);
     }
+}
+
+std::unique_ptr<Footprint> mergeFootprints(Footprint const & foot1, Footprint const & foot2) {
+    // Bail out early if the schemas are not the same
+    if (!(foot1.getPeaks().getSchema() == foot2.getPeaks().getSchema()) ) {
+        throw LSST_EXCEPT(pex::exceptions::InvalidParameterError,
+                          "Cannot merge Footprints with different Schemas");
+    }
+
+    // Merge the SpanSets
+    auto unionedSpanSet = foot1.getSpans()->union_(*(foot2.getSpans()));
+
+    // Construct merged Footprint
+    std::unique_ptr<Footprint> mergedFootprint(new Footprint(unionedSpanSet, foot1.getPeaks().getSchema()));
+
+    // Copy over the peaks from both footprints
+    PeakCatalog & peaks = mergedFootprint->getPeaks();
+    peaks = PeakCatalog(foot1.getPeaks().getTable());
+    peaks.reserve(foot1.getPeaks().size() + foot2.getPeaks().size());
+    peaks.insert(peaks.end(), foot1.getPeaks().begin(), foot1.getPeaks().end(), true);
+    peaks.insert(peaks.end(), foot2.getPeaks().begin(), foot2.getPeaks().end(), true);
+
+    // Sort the PeaksCatalog according to value
+    mergedFootprint->sortPeaks();
+
+    return mergedFootprint;
 }
 
 }}} // End lsst::afw::detection namespace

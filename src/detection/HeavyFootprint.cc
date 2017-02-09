@@ -49,7 +49,7 @@ namespace {
 
 template<typename T>
 struct FlattenWithSetter {
-    FlattenWithSetter(T val) : _val(~val) {}
+    FlattenWithSetter(T val) : _val(val) {}
 
     void operator()(geom::Point2I const & point, T & out, T& in) {
         out = in;
@@ -317,12 +317,17 @@ public:
         HeavyFootprintPersistenceHelper<ImagePixelT,MaskPixelT,VariancePixelT> const & keys =
             HeavyFootprintPersistenceHelper<ImagePixelT,MaskPixelT,VariancePixelT>::get();
         LSST_ARCHIVE_ASSERT(catalogs.size() == 3u);
-        PTR(HeavyFootprint<ImagePixelT,MaskPixelT,VariancePixelT>) result(
-            new HeavyFootprint<ImagePixelT,MaskPixelT,VariancePixelT>()
-        );
-        result->readSpans(catalogs[0]); // these read methods are inherited from Footprint
-        result->readPeaks(catalogs[1]);
+
+        // Read in the SpanSet into a new Footprint object
+        std::shared_ptr<Footprint> loadedFootprint = readSpanSet(catalogs[0], archive);
+        // Now read in the PeakCatalog records
+        readPeaks(catalogs[1], *loadedFootprint);
         afw::table::BaseRecord const & record = catalogs[2].front();
+
+        // Create the HeavyFootprint from the above Footprint
+        auto result = std::make_shared<HeavyFootprint<ImagePixelT,
+                                                      MaskPixelT,
+                                                      VariancePixelT>>(*loadedFootprint);
         result->_image = ndarray::const_array_cast<ImagePixelT>(record.get(keys.image));
         result->_mask = ndarray::const_array_cast<MaskPixelT>(record.get(keys.mask));
         result->_variance = ndarray::const_array_cast<VariancePixelT>(record.get(keys.variance));

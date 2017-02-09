@@ -1,4 +1,5 @@
 
+
 /*
  * LSST Data Management System
  * Copyright 2008-2016  AURA/LSST.
@@ -324,10 +325,6 @@ public:
 
     friend class FootprintFactory;
 
- private:
-
-    friend class FootprintMerge;
-
     /*
      * Static method used to unpersist the SpanSet member of the Footprint class
      */
@@ -338,10 +335,20 @@ public:
      */
     static void readPeaks(afw::table::BaseCatalog const &, Footprint &);
 
+ private:
+
+    friend class FootprintMerge;
+
     std::shared_ptr<geom::SpanSet> _spans;    //!< The SpanSet representing area on image
     PeakCatalog _peaks;                 //!< The peaks lying in this footprint
     geom::Box2I _region;     //!< The corners of the MaskedImage the footprints live in
 };
+
+/**
+ * Merges two Footprints -- appends their peaks, and unions their
+ * spans, returning a new Footprint. Region is not preserved.
+ */
+ std::unique_ptr<Footprint> mergeFootprints(Footprint const& foot1, Footprint const& foot2);
 
 }}} // Close namespace lsst::afw::detection
 
