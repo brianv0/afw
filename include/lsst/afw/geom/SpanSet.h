@@ -728,7 +728,7 @@ private:
     std::shared_ptr<SpanSet> makeShift(int x, int y) const;
 
     template <typename F, typename ...T>
-    void applyFunctorImpl(F f, T... args) const {
+    void applyFunctorImpl(F && f, T... args) const {
         /* Implementation for applying functors, loop over each of the spans, and then
          * each point. Use the get method in the getters to fetch the value and pass
          * the point, and the values to the functor
