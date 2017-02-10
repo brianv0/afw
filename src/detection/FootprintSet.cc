@@ -306,7 +306,10 @@ private:
             }
 
             std::set<std::uint64_t> overwritten;
-            foot->getSpans()->applyFunctor(setIdImage<IdPixelT>(id, &overwritten, true), *idImage);
+            foot->getSpans()->clippedTo(idImage->getBBox())->applyFunctor(setIdImage<IdPixelT>(id,
+                                                                                               &overwritten,
+                                                                                               true),
+                                                                                               *idImage);
 
             if (!overwritten.empty()) {
                 overwrittenIds.insert(overwrittenIds.end(), std::make_pair(id, overwritten));
@@ -324,7 +327,11 @@ private:
             }
 
             std::set<std::uint64_t> overwritten;
-            foot->getSpans()->applyFunctor(setIdImage<IdPixelT>(id, &overwritten, true, lhsIdMask), *idImage);
+            foot->getSpans()->clippedTo(idImage->getBBox())->applyFunctor(setIdImage<IdPixelT>(id,
+                                                                                               &overwritten,
+                                                                                               true,
+                                                                                               lhsIdMask),
+                                                                                               *idImage);
 
             if (!overwritten.empty()) {
                 overwrittenIds.insert(overwrittenIds.end(), std::make_pair(id, overwritten));

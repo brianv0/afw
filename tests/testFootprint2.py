@@ -186,8 +186,8 @@ class FootprintSetTestCase(unittest.TestCase):
 
         i = 1
         for foot in ds.getFootprints()[0:1]:
-            gfoot = afwDetect.growFootprint(foot, 3, False)
-            gfoot.insertIntoImage(idImage, i)
+            foot.dilate(3, afwGeom.Stencil.MANHATTAN)
+            foot.insertIntoImage(idImage, i, doClip=True)
             i += 1
 
         if display:
@@ -252,13 +252,13 @@ class FootprintSetTestCase(unittest.TestCase):
             foot = grown.getFootprints()[0]
 
             if not fctrl.isCircular()[0]:
-                self.assertEqual(foot.getNpix(), 1)
+                self.assertEqual(foot.getArea(), 1)
             elif fctrl.isCircular()[0]:
                 assert radius == 3
                 if fctrl.isIsotropic()[1]:
-                    self.assertEqual(foot.getNpix(), 29)
+                    self.assertEqual(foot.getArea(), 29)
                 else:
-                    self.assertEqual(foot.getNpix(), 25)
+                    self.assertEqual(foot.getArea(), 25)
 
     def testGrowLRUD(self):
         """Grow footprints in various directions using the FootprintSet/FootprintControl constructor """
@@ -297,7 +297,7 @@ class FootprintSetTestCase(unittest.TestCase):
                 for y in range(y0 - ny//2, y0 + ny//2 + 1):
                     self.assertNotEqual(im.getMask().get(x0 + 1, y), 0)
 
-            self.assertEqual(foot.getNpix(), (1 + nextra)*ny)
+            self.assertEqual(foot.getArea(), (1 + nextra)*ny)
         #
         # Test growing to up and/or down
         #
@@ -325,7 +325,7 @@ class FootprintSetTestCase(unittest.TestCase):
                 for y in range(y0 - ny//2 - 1, y0 - ny//2 - ngrow - 1):
                     self.assertNotEqual(im.getMask().get(x0, y), 0)
 
-            self.assertEqual(foot.getNpix(), ny + nextra)
+            self.assertEqual(foot.getArea(), ny + nextra)
 
     def testGrowLRUD2(self):
         """Grow footprints in various directions using the FootprintSet/FootprintControl constructor
@@ -355,7 +355,7 @@ class FootprintSetTestCase(unittest.TestCase):
 
             npix = 1 + 2*ngrow
             npix += 3 + 2*ngrow         # 3: distance between pair of set pixels 000X0X000
-            self.assertEqual(foot.getNpix(), npix)
+            self.assertEqual(foot.getArea(), npix)
 
     def testInf(self):
         """Test detection for images with Infs"""

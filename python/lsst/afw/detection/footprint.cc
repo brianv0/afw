@@ -30,6 +30,7 @@
 #include "ndarray/pybind11.h"
 #include "ndarray/converter.h"
 
+#include "lsst/pex/exceptions.h"
 #include "lsst/afw/table/io/Persistable.h"
 #include "lsst/afw/table/io/pybind11.h" // for declarePersistableFacade
 #include "lsst/afw/detection/Footprint.h"
@@ -38,6 +39,73 @@ namespace py = pybind11;
 using namespace pybind11::literals;
 
 namespace lsst { namespace afw { namespace detection {
+
+namespace {
+template <typename MaskT>
+void declareMaskFromFootprintList(py::module & mod){
+    auto maskSetter = []
+                      (lsst::afw::image::Mask<MaskT> *mask,
+                       std::vector<std::shared_ptr<lsst::afw::detection::Footprint>> const & footprints,
+                       MaskT const bitmask,
+                       bool doClip)
+                      {
+                      for (auto const & foot : footprints) {
+                          try {
+                              if (doClip) {
+                                  auto tmpSpan = foot->getSpans()->clippedTo(mask->getBBox());
+                                  tmpSpan->setMask(*mask, bitmask);
+                              } else {
+                                  foot->getSpans()->setMask(*mask, bitmask);
+                              }
+                          } catch (lsst::pex::exceptions::OutOfRangeError e) {
+                              throw LSST_EXCEPT(lsst::pex::exceptions::OutOfRangeError,
+                                  "Bounds of a Footprint fall outside mask set doClip to force");
+                          }
+                      }
+                      };
+    mod.def("setMaskFromFootprintList", maskSetter, "mask"_a, "footprints"_a, "bitmask"_a,
+            "doClip"_a = true);
+
+}
+
+template <typename ImageT, typename PyClass>
+void declareImageSetMethod(PyClass & cls) {
+    auto imageSetter = []
+                       (lsst::afw::detection::Footprint const & self,
+                        lsst::afw::image::Image<ImageT>  & image,
+                        ImageT id,
+                        lsst::afw::geom::Box2I const & region,
+                        bool doClip)
+                       {
+                           lsst::afw::geom::Box2I bbox;
+                           if (region.isEmpty()) {
+                               bbox = image.getBBox();
+                           } else {
+                               bbox = region;
+                           }
+                           auto setterFunc = []
+                                             (lsst::afw::geom::Point2I const & point,
+                                              ImageT & out,
+                                              ImageT in)
+                                             {
+                                                 out = in;
+                                             };
+                           try {
+                               if (doClip) {
+                                   auto tmpSpan = self.getSpans()->clippedTo(bbox);
+                                   tmpSpan->applyFunctor(setterFunc, image, id);
+                               } else {
+                                   self.getSpans()->applyFunctor(setterFunc, image, id);
+                               }
+                           } catch (lsst::pex::exceptions::OutOfRangeError e) {
+                               throw LSST_EXCEPT(lsst::pex::exceptions::OutOfRangeError,
+                               "Footprint Bounds Outside image, set doClip to true");
+                           }
+                       };
+    cls.def("insertIntoImage", imageSetter, "image"_a, "id"_a, "region"_a = lsst::afw::geom::Box2I(),
+            "doClip"_a = false);
+}
+} // end anonymous namespace
 
 PYBIND11_PLUGIN(_footprint) {
     py::module mod("_footprint", "Python wrapper for afw Footprint library");
@@ -123,6 +191,13 @@ PYBIND11_PLUGIN(_footprint) {
                                     return self == other;
                                 }, py::is_operator());
 
+    declareImageSetMethod<uint16_t>(clsFootprint);
+    declareImageSetMethod<uint64_t>(clsFootprint);
+    declareImageSetMethod<int>(clsFootprint);
+    declareImageSetMethod<float>(clsFootprint);
+    declareImageSetMethod<double>(clsFootprint);
+
+    declareMaskFromFootprintList<lsst::afw::image::MaskPixel>(mod);
     return mod.ptr();
 }
 }}} // close lsst::afw::detection
