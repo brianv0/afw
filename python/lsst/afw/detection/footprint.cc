@@ -91,6 +91,7 @@ PYBIND11_PLUGIN(_footprint) {
     clsFootprint.def("erode", (void (Footprint::*)(geom::SpanSet const &)) &Footprint::erode);
     clsFootprint.def("removeOrphanPeaks", &Footprint::removeOrphanPeaks);
     clsFootprint.def("isContiguous", &Footprint::isContiguous);
+    clsFootprint.def("isHeavy", &Footprint::isHeavy);
     clsFootprint.def("split", []
                               (Footprint const & self) -> py::list
                               {
@@ -108,7 +109,6 @@ PYBIND11_PLUGIN(_footprint) {
     clsFootprint.def_property("spans", &Footprint::getSpans, &Footprint::setSpans);
     clsFootprint.def_property_readonly("peaks", (PeakCatalog & (Footprint::*)()) &Footprint::getPeaks,
                                        py::return_value_policy::reference);
-    clsFootprint.def_property_readonly("isHeavy", &Footprint::isHeavy);
 
 
     /* Python Operators functions */
