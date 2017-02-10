@@ -481,23 +481,26 @@ template <typename ImageT>
 void findPeaksInFootprint(ImageT const & image, bool polarity, detection::PeakCatalog & peaks,
                           detection::Footprint & foot, std::size_t const margin=0) {
     auto spanSet = foot.getSpans();
-    // Verify that the margin does not cause the iteration to be shorter than the SpanSet
-    if (2*margin > spanSet->size()) {
-        throw LSST_EXCEPT(lsst::pex::exceptions::InvalidParameterError,
-                          "The specified margin is larger than the size of the Footprint");
+    if (spanSet->size() == 0){
+        return;
     }
-    for (auto spanIter = spanSet->begin()+margin; spanIter != spanSet->end()-margin; ++spanIter) {
+    auto bbox = image.getBBox();
+    for (auto spanIter = spanSet->begin(); spanIter != spanSet->end(); ++spanIter) {
         auto y = spanIter->getY();
-        if (2*margin > static_cast<std::size_t>(spanIter->getMaxX() - spanIter->getMinX())) {
-            throw LSST_EXCEPT(lsst::pex::exceptions::InvalidParameterError,
-                              "The specified margin exceeds the length of a Span in the Footprint");
+        if (static_cast<std::size_t>(y) < bbox.getMinY() + margin ||
+            static_cast<std::size_t>(y) > bbox.getMaxY() - margin) {
+            continue;
         }
-        for (std::size_t x = spanIter->getMinX()+margin; x != spanIter->getMaxX()-margin; ++x) {
+        for (auto x = spanIter->getMinX(); x <= spanIter->getMaxX(); ++x) {
+            if (static_cast<std::size_t>(x) < (bbox.getMinX() + margin) ||
+                static_cast<std::size_t>(x) > (bbox.getMaxX() - margin)) {
+                continue;
+            }
             auto val = image(x, y);
             if (polarity) {            // look for +ve peaks
-                if (image(x-1,  y+1) > val || image( x, y+1) > val || image(x+1, y+1) > val ||
-                    image(x-1,  y) > val   ||                         image(x+1,  y) > val  ||
-                    image(x-1, x-1) > val  || image( x, y-1) > val || image(x+1, y-1) > val) {
+                if (image(x-1,  y+1) > val || image(x, y+1) > val || image(x+1, y+1) > val ||
+                    image(x-1,  y) > val   ||                        image(x+1,  y) > val  ||
+                    image(x-1, x-1) > val  || image(x, y-1) > val || image(x+1, y-1) > val) {
                     continue;
                 }
             } else {                    // look for -ve "peaks" (pits)
@@ -516,7 +519,7 @@ void findPeaksInFootprint(ImageT const & image, bool polarity, detection::PeakCa
 template <typename ImageT>
 class FindMaxInFootprint {
 public:
-    FindMaxInFootprint(bool polarity): _polarity(polarity),
+    explicit FindMaxInFootprint(bool polarity): _polarity(polarity),
                                        _x(0),
                                        _y(0),
                                        _min(std::numeric_limits<double>::max()),
