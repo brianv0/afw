@@ -1,3 +1,4 @@
+
 // -*- lsst-c++ -*-
 
 /*
@@ -38,6 +39,7 @@
 #include "lsst/afw/geom/Box.h"
 #include "lsst/afw/image/Mask.h"
 #include "lsst/afw/table/io/Persistable.h"
+#include "lsst/afw/geom/ellipses/Ellipse.h"
 #include "lsst/afw/geom/SpanSetFunctorGetters.h"
 
 namespace lsst { namespace afw { namespace geom { namespace details {
@@ -648,6 +650,12 @@ class SpanSet : public afw::table::io::PersistableFacade<lsst::afw::geom::SpanSe
                 newly created SpanSet. May be CIRCLE, MANHATTAN, or BOX
     */
     static std::shared_ptr<geom::SpanSet> spanSetFromShape(int r, Stencil s = Stencil::CIRCLE);
+
+    /** @brief Factory function for creating SpanSets from an ellipse object
+     *
+     * @param ellipse An ellipse defining the region to create a SpanSet from
+     */
+    static std::shared_ptr<geom::SpanSet> spanSetFromShape(geom::ellipses::Ellipse const & ellipse);
 
     /** @brief Split a discontinuous SpanSet into multiple SpanSets which are contiguous
      */

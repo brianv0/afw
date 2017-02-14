@@ -26,6 +26,7 @@
 #include "lsst/afw/table/io/CatalogVector.h"
 #include "lsst/afw/table/io/InputArchive.h"
 #include "lsst/afw/table/io/OutputArchive.h"
+#include "lsst/afw/geom/ellipses/PixelRegion.h"
 #include <algorithm>
 #include <iterator>
 
@@ -616,6 +617,11 @@ std::shared_ptr<geom::SpanSet> geom::SpanSet::spanSetFromShape(int r, Stencil s)
             break;
     }
     return std::make_shared<geom::SpanSet>(std::move(tempVec), false);
+}
+
+std::shared_ptr<geom::SpanSet> geom::SpanSet::spanSetFromShape(geom::ellipses::Ellipse const & ellipse) {
+    geom::ellipses::PixelRegion pr(ellipse);
+    return std::make_shared<geom::SpanSet>(pr.begin(), pr.end());
 }
 
 std::shared_ptr<geom::SpanSet> geom::SpanSet::intersect(geom::SpanSet const & other) const {
