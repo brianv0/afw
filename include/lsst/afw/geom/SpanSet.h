@@ -41,6 +41,8 @@
 #include "lsst/afw/table/io/Persistable.h"
 #include "lsst/afw/geom/ellipses/Ellipse.h"
 #include "lsst/afw/geom/SpanSetFunctorGetters.h"
+#include "lsst/afw/image/Image.h"
+#include "lsst/afw/image/MaskedImage.h"
 
 namespace lsst { namespace afw { namespace geom { namespace details {
     /* Functor object to be used with maskToSpanSet function
@@ -465,6 +467,99 @@ class SpanSet : public afw::table::io::PersistableFacade<lsst::afw::geom::SpanSe
                            typename details::FlatNdGetter<PixelIn, inA, inC>::Reference in)
                           {out = in;};
         applyFunctor(ndAssigner, ndarray::ndImage(output, xy0), ndarray::ndFlat(input));
+    }
+
+    /** @brief Copy contentes of source Image into destination image at the positions defined in the SpanSet
+     *
+     * @param src The Image that pixel values will be taken from
+     * @param dest The Image where pixels will be copied
+     *
+     * @tparam ImageT The pixel type of the Image
+     */
+    template <typename ImageT>
+    void copyImage(image::Image<ImageT> const & src, image::Image<ImageT> & dest) {
+        auto copyFunc = []
+                        (
+                        lsst::afw::geom::Point2I const & point,
+                        ImageT const & srcPix,
+                        ImageT & destPix)
+                        {
+                            destPix = srcPix;
+                        };
+        applyFunctor(copyFunc, src, dest);
+    }
+
+    /** @brief Copy contentes of source MaskedImage into destination image at the positions defined in the SpanSet
+     *
+     * @param src The MaskedImage that pixel values will be taken from
+     * @param dest The MaskedImage where pixels will be copied
+     *
+     * @tparam ImageT The pixel type of the MaskedImage's Image
+     * @tparam MaskT The pixel type of the MaskedImage's Mask
+     * @tparam VarT The Pixel type of the MaskedImage's Variance Image
+     */
+    template <typename ImageT, typename MaskT, typename VarT>
+    void copyMaskedImage(image::MaskedImage<ImageT, MaskT, VarT> const & src,
+                         image::MaskedImage<ImageT, MaskT, VarT> & dest) {
+         auto copyFunc = []
+                 (
+                   lsst::afw::geom::Point2I const & point,
+                   ImageT const & srcPix,
+                   MaskT const & srcMask,
+                   VarT const & srcVar,
+                   ImageT & destPix,
+                   MaskT & destMask,
+                   VarT & destVar
+                 )
+                 {
+                     destPix = srcPix;
+                     destMask = srcMask;
+                     destVar = srcVar;
+                 };
+        applyFunctor(copyFunc, *(src.getImage()), *(src.getMask()), *(src.getVariance()),
+                          *(dest.getImage()), *(dest.getMask()), *(dest.getVariance()));
+    }
+
+    /** @brief Set the values of an Image at points defined by the SpanSet
+     *
+     * @param image The Image in which pixels will be set
+     * @param val The value to set
+     * @param region A bounding box limiting the scope of the SpanSet, points defined
+                     in the SpanSet which fall outside this box will be ignored if
+                     the doClip parameter is set to true, defaults to the bounding
+                     box of the image
+     * @param doClip Limit the copy operation to pixels in the SpanSet that lie within
+                     the region parameter defaults to false
+     *
+     * @tparam ImageT The pixel type of the Image to be set
+     */
+    template <typename ImageT>
+    void setImage(image::Image<ImageT> & image, ImageT val,
+                  geom::Box2I const & region=geom::Box2I(), bool doClip = false) {
+        geom::Box2I bbox;
+        if (region.isEmpty()) {
+            bbox = image.getBBox();
+        } else {
+            bbox = region;
+        }
+        auto setterFunc = []
+                  (lsst::afw::geom::Point2I const & point,
+                   ImageT & out,
+                   ImageT in)
+                  {
+                      out = in;
+                  };
+        //try {
+            if (doClip) {
+                auto tmpSpan = this->clippedTo(bbox);
+                tmpSpan->applyFunctor(setterFunc, image, val);
+            } else {
+                applyFunctor(setterFunc, image, val);
+            }
+        /*} catch (lsst::pex::exceptions::OutOfRangeError e) {
+            throw LSST_EXCEPT(lsst::pex::exceptions::OutOfRangeError,
+                "Footprint Bounds Outside image, set doClip to true");
+          }*/
     }
 
     /** @brief Apply functor on individual elements from the supplied parameters

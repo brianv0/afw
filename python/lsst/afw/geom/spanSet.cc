@@ -1,4 +1,3 @@
-
 /*
  * LSST Data Management System
  * Copyright 2008-2016  AURA/LSST.
@@ -36,6 +35,7 @@
 
 
 namespace py = pybind11;
+using namespace pybind11::literals;
 
 namespace lsst { namespace afw { namespace geom {
 
@@ -105,6 +105,13 @@ namespace {
         cls.def("intersect", (std::shared_ptr<SpanSet> (SpanSet::*)(lsst::afw::image::Mask<Pixel> const &,
                                                                     Pixel const &) const)
                                                                     &SpanSet::intersect<Pixel>);
+        // Default to compare any bit set
+        cls.def("intersect", []
+                             (SpanSet const & self, lsst::afw::image::Mask<Pixel> const & mask)
+                             {
+                                 auto tempSpanSet = geom::maskToSpanSet(mask);
+                                 return self.intersect(*tempSpanSet);
+                             });
     }
 
     template <typename Pixel, typename PyClass>
@@ -112,6 +119,13 @@ namespace {
         cls.def("intersectNot", (std::shared_ptr<SpanSet> (SpanSet::*)(lsst::afw::image::Mask<Pixel> const &,
                                                                        Pixel const &) const)
                                                                        &SpanSet::intersectNot<Pixel>);
+        // Default to compare any bit set
+        cls.def("intersectNot", []
+                                (SpanSet const & self, lsst::afw::image::Mask<Pixel> const & mask)
+                                {
+                                    auto tempSpanSet = geom::maskToSpanSet(mask);
+                                    return self.intersectNot(*tempSpanSet);
+                                });
     }
 
     template <typename Pixel, typename PyClass>
@@ -119,6 +133,31 @@ namespace {
         cls.def("union", (std::shared_ptr<SpanSet> (SpanSet::*)(lsst::afw::image::Mask<Pixel> const &,
                                                                 Pixel const &) const)
                                                                 &SpanSet::union_<Pixel>);
+        // Default to compare any bit set
+        cls.def("union", []
+                         (SpanSet const & self, lsst::afw::image::Mask<Pixel> const & mask)
+                         {
+                             auto tempSpanSet = geom::maskToSpanSet(mask);
+                             return self.union_(*tempSpanSet);
+                         });
+    }
+
+    template <typename ImageT, typename PyClass>
+    void declareCopyImage(PyClass & cls) {
+        cls.def("copyImage", &SpanSet::copyImage<ImageT>);
+    }
+
+    template <typename ImageT, typename PyClass>
+    void declareCopyMaskedImage(PyClass & cls) {
+        using MaskPixel = lsst::afw::image::MaskPixel;
+        using VariancePixel = lsst::afw::image::VariancePixel;
+        cls.def("copyMaskedImage", &SpanSet::copyMaskedImage<ImageT, MaskPixel, VariancePixel>);
+    }
+
+    template <typename ImageT, typename PyClass>
+    void declareSetImage(PyClass & cls) {
+        cls.def("setImage", &SpanSet::setImage<ImageT>, "image"_a, "val"_a,
+                "region"_a = lsst::afw::geom::Box2I(), "doClip"_a=false);
     }
 
     template <typename Pixel>
@@ -145,6 +184,15 @@ namespace {
         declareIntersectMethod<Pixel>(cls);
         declareIntersectNotMethod<Pixel>(cls);
         declareUnionMethod<Pixel>(cls);
+    }
+
+    template <typename Pixel, typename PyClass>
+    void declareImageTypes(PyClass & cls) {
+        declareFlattenMethod<Pixel>(cls);
+        declareUnflattenMethod<Pixel>(cls);
+        declareCopyImage<Pixel>(cls);
+        declareCopyMaskedImage<Pixel>(cls);
+        declareSetImage<Pixel>(cls);
     }
 
 } // end anonymous namespace
@@ -204,7 +252,10 @@ PYBIND11_PLUGIN(_spanSet) {
                     (std::shared_ptr<SpanSet> (SpanSet::*)(SpanSet const &) const) &SpanSet::intersectNot);
     clsSpanSet.def("union", (std::shared_ptr<SpanSet> (SpanSet::*)(SpanSet const &) const) &SpanSet::union_);
     clsSpanSet.def_static("spanSetFromShape",
-                          (std::shared_ptr<SpanSet> (*)(int, Stencil)) &SpanSet::spanSetFromShape);
+                          (std::shared_ptr<SpanSet> (*)(int, Stencil)) &SpanSet::spanSetFromShape,
+                           "radius"_a, "stencil"_a=Stencil::CIRCLE);
+    clsSpanSet.def_static("spanSetFromShape",
+                          (std::shared_ptr<SpanSet> (*)(geom::ellipses::Ellipse const &)) &SpanSet::spanSetFromShape);
     clsSpanSet.def("split", &SpanSet::split);
     clsSpanSet.def("findEdgePixels", &SpanSet::findEdgePixels);
 
@@ -257,21 +308,18 @@ PYBIND11_PLUGIN(_spanSet) {
                        return os.str();
                    });
     // Instantiate all the templates
-    declareFlattenMethod<uint16_t>(clsSpanSet);
-    declareFlattenMethod<uint64_t>(clsSpanSet);
-    declareFlattenMethod<int>(clsSpanSet);
-    declareFlattenMethod<long>(clsSpanSet);
-    declareFlattenMethod<float>(clsSpanSet);
-    declareFlattenMethod<double>(clsSpanSet);
-
-    declareUnflattenMethod<uint16_t>(clsSpanSet);
-    declareUnflattenMethod<uint64_t>(clsSpanSet);
-    declareUnflattenMethod<int>(clsSpanSet);
-    declareUnflattenMethod<long>(clsSpanSet);
-    declareUnflattenMethod<float>(clsSpanSet);
-    declareUnflattenMethod<double>(clsSpanSet);
 
     declareMaskMethods<MaskPixel>(clsSpanSet);
+
+    declareImageTypes<uint16_t>(clsSpanSet);
+    declareImageTypes<uint64_t>(clsSpanSet);
+    declareImageTypes<int>(clsSpanSet);
+    declareImageTypes<float>(clsSpanSet);
+    declareImageTypes<double>(clsSpanSet);
+
+    // Extra instantiation for flatten unflatten methods
+    declareFlattenMethod<long>(clsSpanSet);
+    declareUnflattenMethod<long>(clsSpanSet);
 
     /* Free Functions */
     declareMaskToSpanSetFunction<MaskPixel>(mod);
