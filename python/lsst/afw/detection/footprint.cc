@@ -68,43 +68,6 @@ void declareMaskFromFootprintList(py::module & mod){
 
 }
 
-template <typename ImageT, typename PyClass>
-void declareImageSetMethod(PyClass & cls) {
-    auto imageSetter = []
-                       (lsst::afw::detection::Footprint const & self,
-                        lsst::afw::image::Image<ImageT>  & image,
-                        ImageT id,
-                        lsst::afw::geom::Box2I const & region,
-                        bool doClip)
-                       {
-                           lsst::afw::geom::Box2I bbox;
-                           if (region.isEmpty()) {
-                               bbox = image.getBBox();
-                           } else {
-                               bbox = region;
-                           }
-                           auto setterFunc = []
-                                             (lsst::afw::geom::Point2I const & point,
-                                              ImageT & out,
-                                              ImageT in)
-                                             {
-                                                 out = in;
-                                             };
-                           try {
-                               if (doClip) {
-                                   auto tmpSpan = self.getSpans()->clippedTo(bbox);
-                                   tmpSpan->applyFunctor(setterFunc, image, id);
-                               } else {
-                                   self.getSpans()->applyFunctor(setterFunc, image, id);
-                               }
-                           } catch (lsst::pex::exceptions::OutOfRangeError e) {
-                               throw LSST_EXCEPT(lsst::pex::exceptions::OutOfRangeError,
-                               "Footprint Bounds Outside image, set doClip to true");
-                           }
-                       };
-    cls.def("insertIntoImage", imageSetter, "image"_a, "id"_a, "region"_a = lsst::afw::geom::Box2I(),
-            "doClip"_a = false);
-}
 } // end anonymous namespace
 
 PYBIND11_PLUGIN(_footprint) {
@@ -129,6 +92,7 @@ PYBIND11_PLUGIN(_footprint) {
                               afw::table::Schema const &,
                               geom::Box2I const &>(),
                      "inputSpans"_a, "peakSchema"_a, "region"_a = geom::Box2I());
+    clsFootprint.def(py::init<Footprint const &>());
     clsFootprint.def(py::init<>());
 
     /* Footprint Methods */
@@ -160,6 +124,7 @@ PYBIND11_PLUGIN(_footprint) {
     clsFootprint.def("removeOrphanPeaks", &Footprint::removeOrphanPeaks);
     clsFootprint.def("isContiguous", &Footprint::isContiguous);
     clsFootprint.def("isHeavy", &Footprint::isHeavy);
+    clsFootprint.def("assign", (Footprint & (Footprint::*)(Footprint const &)) &Footprint::operator=);
     clsFootprint.def("split", []
                               (Footprint const & self) -> py::list
                               {
@@ -191,13 +156,11 @@ PYBIND11_PLUGIN(_footprint) {
                                     return self == other;
                                 }, py::is_operator());
 
-    declareImageSetMethod<uint16_t>(clsFootprint);
-    declareImageSetMethod<uint64_t>(clsFootprint);
-    declareImageSetMethod<int>(clsFootprint);
-    declareImageSetMethod<float>(clsFootprint);
-    declareImageSetMethod<double>(clsFootprint);
-
     declareMaskFromFootprintList<lsst::afw::image::MaskPixel>(mod);
+
+    mod.def("mergeFootprints", &mergeFootprints);
+    mod.def("footprintToBBoxList", &footprintToBBoxList);
+
     return mod.ptr();
 }
 }}} // close lsst::afw::detection
