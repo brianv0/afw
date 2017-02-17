@@ -142,7 +142,7 @@ class FootprintSetTestCase(unittest.TestCase):
         idImage.set(0)
 
         for foot in objects:
-            foot.insertIntoImage(idImage, foot.getId())
+            foot.spans.setImage(idImage, foot.getId())
 
         if False:
             ds9.mtv(idImage, frame=2)
@@ -187,7 +187,7 @@ class FootprintSetTestCase(unittest.TestCase):
         i = 1
         for foot in ds.getFootprints()[0:1]:
             foot.dilate(3, afwGeom.Stencil.MANHATTAN)
-            foot.insertIntoImage(idImage, i, doClip=True)
+            foot.spans.setImage(idImage, i, doClip=True)
             i += 1
 
         if display:
@@ -278,6 +278,7 @@ class FootprintSetTestCase(unittest.TestCase):
             afwDetect.FootprintControl(True, False, False, False),
             afwDetect.FootprintControl(True, True, False, False),
         ):
+            fs = afwDetect.FootprintSet(im, afwDetect.Threshold(10))
             grown = afwDetect.FootprintSet(fs, ngrow, fctrl)
             im.getMask().set(0)
             afwDetect.setMaskFromFootprintList(im.getMask(), grown.getFootprints(), 0x10)

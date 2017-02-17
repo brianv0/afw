@@ -269,11 +269,13 @@ private:
         OldIdMap overwrittenIds;        // here's a map from id -> overwritten IDs
 
         auto grower = [& circular, & up, & down , & left , & right, &isotropic]
-                      (std::shared_ptr<Footprint> foot, int amount)
+                      (std::shared_ptr<Footprint> const & foot, int amount) -> std::shared_ptr<Footprint>
                       {
                           if (circular) {
                               auto element = isotropic ? geom::Stencil::CIRCLE : geom::Stencil::MANHATTAN;
-                              foot->dilate(amount, element);
+                              auto tmpFoot = std::make_shared<Footprint>(foot->getSpans()->dilate(amount, element),
+                                                                         foot->getRegion());
+                              return tmpFoot;
                           } else {
                               int top = up ? amount : 0;
                               int bottom = down ? amount : 0;
@@ -287,12 +289,14 @@ private:
                               for (auto dy = 1; dy <= top; ++dy) {
                                   spanList.push_back(geom::Span(dy, 0, 0));
                               }
-                              for (auto dy = -1; dy >= bottom; --dy){
+                              for (auto dy = -1; dy >= -bottom; --dy){
                                   spanList.push_back(geom::Span(dy, 0, 0));
                               }
                               spanList.push_back(geom::Span(0, -lLimit, rLimit));
                               geom::SpanSet structure(std::move(spanList));
-                              foot->dilate(structure);
+                              auto tmpFoot = std::make_shared<Footprint>(foot->getSpans()->dilate(structure),
+                                                                         foot->getRegion());
+                              return tmpFoot;
                           }
                       };
 
@@ -302,7 +306,7 @@ private:
             PTR(Footprint) foot = *ptr;
 
             if (rLhs > 0 && foot->getArea() > 0) {
-                grower(foot, rLhs);
+                foot = grower(foot, rLhs);
             }
 
             std::set<std::uint64_t> overwritten;
@@ -323,7 +327,7 @@ private:
             PTR(Footprint) foot = *ptr;
 
             if (rRhs > 0 && foot->getArea() > 0) {
-                grower(foot, rRhs);
+                foot = grower(foot, rRhs);
             }
 
             std::set<std::uint64_t> overwritten;
